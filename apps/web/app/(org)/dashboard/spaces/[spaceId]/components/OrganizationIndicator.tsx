@@ -121,7 +121,7 @@ export const OrganizationIndicator = ({
 						>
 							{canManageMembers && (
 								<Button
-									variant="dark"
+									variant="primary"
 									size="sm"
 									href="/dashboard/settings/organization"
 								>
@@ -138,7 +138,7 @@ export const OrganizationIndicator = ({
 			</Dialog>
 
 			{onAddVideos && (
-				<Button variant="dark" size="sm" onClick={onAddVideos}>
+				<Button variant="primary" size="sm" onClick={onAddVideos}>
 					<FontAwesomeIcon className="size-3" icon={faPlus} />
 					Add videos
 				</Button>

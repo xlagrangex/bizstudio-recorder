@@ -312,7 +312,7 @@ export const CollectionShareDialog = ({
 					)}
 					<Button
 						type="button"
-						variant="dark"
+						variant="primary"
 						size="sm"
 						onClick={() => onOpenChange(false)}
 					>

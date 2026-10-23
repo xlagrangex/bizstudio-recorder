@@ -26,7 +26,7 @@ export default function AddVideosButton({
 
 	return (
 		<>
-			<Button variant="dark" size="sm" onClick={() => setOpen(true)}>
+			<Button variant="primary" size="sm" onClick={() => setOpen(true)}>
 				<FontAwesomeIcon className="size-3" icon={faPlus} />
 				Add videos
 			</Button>

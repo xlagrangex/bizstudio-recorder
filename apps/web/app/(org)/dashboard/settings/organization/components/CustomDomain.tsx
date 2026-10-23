@@ -154,7 +154,7 @@ export function CustomDomain() {
 								type="submit"
 								size="sm"
 								className="min-w-fit"
-								variant="dark"
+								variant="primary"
 								onClick={(e) => {
 									e.preventDefault();
 									setShowCustomDomainDialog(true);

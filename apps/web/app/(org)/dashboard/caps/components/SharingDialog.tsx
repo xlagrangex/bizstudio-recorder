@@ -482,7 +482,7 @@ export const SharingDialog: React.FC<SharingDialogProps> = ({
 									/>
 									<Button
 										size="sm"
-										variant="dark"
+										variant="primary"
 										className="shrink-0"
 										spinner={inviteViewer.isPending}
 										disabled={
@@ -648,7 +648,7 @@ export const SharingDialog: React.FC<SharingDialogProps> = ({
 							</div>
 							<Button
 								className="w-full font-medium"
-								variant="dark"
+								variant="primary"
 								onClick={handleCopyEmbedCode}
 							>
 								<FontAwesomeIcon icon={faCopy} className="size-3.5 mr-1" />
@@ -668,7 +668,7 @@ export const SharingDialog: React.FC<SharingDialogProps> = ({
 								spinner={updateSharing.isPending}
 								disabled={updateSharing.isPending}
 								size="sm"
-								variant="dark"
+								variant="primary"
 								onClick={() => {
 									if (
 										passwordEnabled &&

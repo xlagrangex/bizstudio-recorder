@@ -221,7 +221,7 @@ const StepOne = ({
 				/>
 			</div>
 			<Button
-				variant="dark"
+				variant="primary"
 				type="submit"
 				icon={<FontAwesomeIcon className="mr-1 size-4" icon={faEnvelope} />}
 				disabled={loading || emailSent}

@@ -285,7 +285,7 @@ export const Settings = () => {
 					className="mt-6"
 					type="submit"
 					size="sm"
-					variant="dark"
+					variant="primary"
 					spinner={updateNamePending}
 				>
 					{updateNamePending ? "Saving..." : "Save"}

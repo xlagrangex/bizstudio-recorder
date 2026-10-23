@@ -94,7 +94,7 @@ export function CollectionPasswordOverlay({
 						</div>
 						<Button
 							type="button"
-							variant="dark"
+							variant="primary"
 							size="lg"
 							className="w-full"
 							spinner={verifyPassword.isPending}

@@ -66,7 +66,7 @@ export function WelcomePage() {
 					spinner={welcomeMutation.isPending}
 					disabled={!firstName || welcomeMutation.isPending}
 					type="submit"
-					variant="dark"
+					variant="primary"
 					className="mx-auto w-full"
 				>
 					Continue

@@ -281,7 +281,7 @@ export const SharedCaps = ({
 						<Button
 							onClick={() => setOpenNewFolderDialog(true)}
 							size="sm"
-							variant="dark"
+							variant="white"
 							className="flex gap-2 items-center w-fit"
 						>
 							<FontAwesomeIcon className="size-3.5" icon={faFolderPlus} />
@@ -411,7 +411,7 @@ export const SharedCaps = ({
 					<Button
 						onClick={() => setOpenNewFolderDialog(true)}
 						size="sm"
-						variant="dark"
+						variant="white"
 						className="flex gap-2 items-center w-fit"
 					>
 						<FontAwesomeIcon className="size-3.5" icon={faFolderPlus} />

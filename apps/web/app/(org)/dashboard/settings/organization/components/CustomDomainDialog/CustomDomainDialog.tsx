@@ -457,7 +457,7 @@ const CustomDomainDialog = ({
 										size="sm"
 										spinner={updateDomainMutation.isPending}
 										disabled={updateDomainMutation.isPending || !domain.trim()}
-										variant="dark"
+										variant="primary"
 										className="min-w-[100px]"
 									>
 										Next

@@ -84,7 +84,7 @@ export const ImportLoomButton = ({
 		<>
 			<Button
 				onClick={handleClick}
-				variant="dark"
+				variant="white"
 				className="flex gap-2 items-center"
 				size={size}
 			>
@@ -130,7 +130,7 @@ export const ImportLoomButton = ({
 							onClick={handleImport}
 							size="sm"
 							spinner={isImporting}
-							variant="dark"
+							variant="primary"
 							disabled={!isValidLoomUrl || isImporting}
 						>
 							{isImporting ? "Importing..." : "Import"}

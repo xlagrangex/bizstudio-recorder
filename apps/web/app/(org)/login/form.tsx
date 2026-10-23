@@ -532,7 +532,7 @@ const LoginWithSSO = ({
 			<div>
 				<Button
 					type="submit"
-					variant="dark"
+					variant="primary"
 					className="w-full max-w-full"
 					disabled={loading}
 					spinner={loading}
@@ -584,7 +584,7 @@ const NormalLogin = ({
 					}}
 				/>
 				<MotionButton
-					variant="dark"
+					variant="primary"
 					type="submit"
 					disabled={loading || emailSent}
 					spinner={loading}
@@ -607,18 +607,20 @@ const NormalLogin = ({
                   </div>
                 )} */}
 			</motion.div>
-			<motion.p
-				layout="position"
-				className="mt-3 mb-2 text-xs text-center text-gray-9"
-			>
-				Don't have an account?{" "}
-				<Link
-					href="/signup"
-					className="text-xs font-semibold text-blue-9 hover:text-blue-8"
+			{buildEnv.NEXT_PUBLIC_IS_CAP && (
+				<motion.p
+					layout="position"
+					className="mt-3 mb-2 text-xs text-center text-gray-9"
 				>
-					Sign up here
-				</Link>
-			</motion.p>
+					Don't have an account?{" "}
+					<Link
+						href="/signup"
+						className="text-xs font-semibold text-blue-9 hover:text-blue-8"
+					>
+						Sign up here
+					</Link>
+				</motion.p>
+			)}
 
 			{(publicEnv.googleAuthAvailable ||
 				publicEnv.workosAuthAvailable ||

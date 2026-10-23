@@ -68,6 +68,10 @@
 	--blue-12: #fbd1ee;
 }
 
+:where(:focus-visible) {
+	outline-color: var(--blue-9);
+}
+
 /* Tailwind's static blue-500..900 are fixed hex values, so on dark surfaces magenta text is lifted to the readable end of the dark ramp. */
 .dark .text-blue-9,
 .dark .text-blue-10,

@@ -79,7 +79,7 @@ export const SelectedCapsBar = ({
 								</Button>
 							)}
 							<Button
-								variant="dark"
+								variant="white"
 								onClick={() => setSelectedCaps([])}
 								className="text-sm"
 								size="sm"

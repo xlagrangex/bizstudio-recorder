@@ -94,7 +94,7 @@ const SpaceDialog = ({
 						Cancel
 					</Button>
 					<Button
-						variant="dark"
+						variant="primary"
 						size="sm"
 						disabled={isSubmitting || !spaceName.trim().length}
 						spinner={isSubmitting}

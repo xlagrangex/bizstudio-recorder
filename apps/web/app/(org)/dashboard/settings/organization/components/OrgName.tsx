@@ -55,7 +55,7 @@ const OrgName = () => {
 					type="submit"
 					size="sm"
 					className="min-w-fit"
-					variant="dark"
+					variant="primary"
 					spinner={saveLoading}
 					onClick={handleOrgNameChange}
 					disabled={

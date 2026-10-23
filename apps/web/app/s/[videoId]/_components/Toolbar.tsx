@@ -341,7 +341,7 @@ export const Toolbar = ({
 								>
 									<MotionButton
 										onClick={handleCommentClick}
-										variant="dark"
+										variant="primary"
 										layout="position"
 										kbd="c"
 										size="sm"

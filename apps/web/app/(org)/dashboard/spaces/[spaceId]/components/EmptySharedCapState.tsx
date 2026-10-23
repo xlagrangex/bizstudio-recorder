@@ -60,7 +60,7 @@ export const EmptySharedCapState: React.FC<EmptySharedCapStateProps> = ({
 				{showAddButton && (
 					<Button
 						onClick={onAddVideos}
-						variant="dark"
+						variant="primary"
 						size="lg"
 						className="flex gap-2 items-center mx-auto"
 					>

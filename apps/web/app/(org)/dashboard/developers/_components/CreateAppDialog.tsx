@@ -104,7 +104,7 @@ export function CreateAppDialog({
 								Cancel
 							</Button>
 							<Button
-								variant="dark"
+								variant="primary"
 								size="sm"
 								disabled={!name.trim() || createMutation.isPending}
 								spinner={createMutation.isPending}
@@ -132,7 +132,7 @@ export function CreateAppDialog({
 							/>
 						</div>
 						<DialogFooter>
-							<Button variant="dark" size="sm" onClick={handleClose}>
+							<Button variant="primary" size="sm" onClick={handleClose}>
 								Done
 							</Button>
 						</DialogFooter>

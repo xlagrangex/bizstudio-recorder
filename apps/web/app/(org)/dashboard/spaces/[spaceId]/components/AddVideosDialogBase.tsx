@@ -351,7 +351,7 @@ function AddVideosDialogBase<T>({
 						</Button>
 
 						<Button
-							variant="dark"
+							variant="primary"
 							size="sm"
 							disabled={updateVideosMutation.isPending}
 							spinner={updateVideosMutation.isPending}

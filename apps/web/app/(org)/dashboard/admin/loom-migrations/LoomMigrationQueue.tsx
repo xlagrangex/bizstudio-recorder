@@ -321,7 +321,7 @@ function QueueItem({ request }: { request: OperatorLoomMigrationView }) {
 					}
 					onClick={() => importMutation.mutate()}
 					size="sm"
-					variant="dark"
+					variant="primary"
 				>
 					{importMutation.isPending
 						? `Importing ${processedRows}/${csvRows.length}`
@@ -439,7 +439,7 @@ function QueueItem({ request }: { request: OperatorLoomMigrationView }) {
 					disabled={filePending || importMutation.isPending || !file}
 					size="sm"
 					type="submit"
-					variant="dark"
+					variant="primary"
 				>
 					{fileMutation.isPending
 						? `Uploading ${uploadPercent}%`
@@ -585,7 +585,7 @@ function QueueItem({ request }: { request: OperatorLoomMigrationView }) {
 					}
 					size="sm"
 					type="submit"
-					variant="dark"
+					variant="primary"
 				>
 					Save status
 				</Button>

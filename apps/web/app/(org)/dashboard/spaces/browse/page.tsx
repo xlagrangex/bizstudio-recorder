@@ -94,7 +94,7 @@ export default function BrowseSpacesPage() {
 				<Button
 					onClick={() => setShowSpaceDialog(true)}
 					size="sm"
-					variant="dark"
+					variant="primary"
 				>
 					<FontAwesomeIcon className="size-3" icon={faPlus} />
 					Create Space

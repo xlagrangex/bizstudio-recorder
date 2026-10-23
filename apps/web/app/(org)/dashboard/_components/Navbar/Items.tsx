@@ -364,7 +364,7 @@ const AdminNavItems = ({ toggleMobileNav }: Props) => {
 												})}
 												<DialogTrigger asChild>
 													<Button
-														variant="dark"
+														variant="primary"
 														size="sm"
 														className="flex gap-1 items-center my-2 w-[90%] mx-auto text-sm"
 													>
@@ -490,7 +490,7 @@ const AdminNavItems = ({ toggleMobileNav }: Props) => {
 						Cancel
 					</Button>
 					<Button
-						variant="dark"
+						variant="primary"
 						size="sm"
 						disabled={createLoading || !organizationName.trim().length}
 						spinner={createLoading}

@@ -83,7 +83,7 @@ export function DomainsClient() {
 					</div>
 					<Button
 						type="submit"
-						variant="dark"
+						variant="primary"
 						size="sm"
 						disabled={!newDomain.trim() || addMutation.isPending}
 						spinner={addMutation.isPending}

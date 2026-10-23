@@ -157,7 +157,7 @@ export const SubfolderDialog: React.FC<Props> = ({
 						}}
 						size="sm"
 						spinner={createSubfolder.isPending}
-						variant="dark"
+						variant="primary"
 						disabled={
 							!selectedColor ||
 							!folderName.trim().length ||

@@ -105,7 +105,7 @@ export const PasswordDialog: React.FC<PasswordDialogProps> = ({
 					)}
 					<Button
 						size="sm"
-						variant="dark"
+						variant="primary"
 						onClick={() => updatePassword.mutate()}
 						spinner={pending}
 						disabled={pending}

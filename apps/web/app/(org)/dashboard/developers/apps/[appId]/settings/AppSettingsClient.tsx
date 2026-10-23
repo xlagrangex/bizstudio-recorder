@@ -106,7 +106,7 @@ export function AppSettingsClient() {
 					</div>
 					<Button
 						type="submit"
-						variant="dark"
+						variant="primary"
 						size="sm"
 						className="self-start"
 						spinner={updateMutation.isPending}
@@ -145,9 +145,8 @@ export function AppSettingsClient() {
 								Cancel
 							</Button>
 							<Button
-								variant="dark"
+								variant="destructive"
 								size="sm"
-								className="!bg-red-400 hover:!bg-red-300"
 								spinner={deleteMutation.isPending}
 								disabled={deleteMutation.isPending}
 								onClick={() => deleteMutation.mutate()}

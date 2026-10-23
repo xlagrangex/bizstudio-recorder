@@ -124,7 +124,7 @@ export function CreditsClient({
 							className="w-20"
 						/>
 						<Button
-							variant="dark"
+							variant="primary"
 							size="sm"
 							disabled={
 								!customAmount || purchaseMutation.isPending || !selectedApp

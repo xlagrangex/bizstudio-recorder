@@ -73,7 +73,7 @@ export const AccessEmailDomain = () => {
 						type="submit"
 						spinner={saveLoading}
 						size="sm"
-						variant="dark"
+						variant="primary"
 						disabled={
 							saveLoading ||
 							emailDomain ===

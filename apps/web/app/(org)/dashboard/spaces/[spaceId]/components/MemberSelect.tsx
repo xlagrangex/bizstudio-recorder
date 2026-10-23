@@ -267,7 +267,7 @@ const EmptyMessage: React.FC<EmptyMessageProps> = ({
 		{showUpgradeButton && (
 			<Button
 				href="/dashboard/settings/organization"
-				variant="dark"
+				variant="primary"
 				size="xs"
 				onClick={onButtonClick}
 			>

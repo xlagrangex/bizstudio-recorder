@@ -40,7 +40,7 @@ export const UploadCapButton = ({
 		<>
 			<Button
 				onClick={handleClick}
-				variant="dark"
+				variant="white"
 				className="flex gap-2 items-center"
 				size={size}
 			>

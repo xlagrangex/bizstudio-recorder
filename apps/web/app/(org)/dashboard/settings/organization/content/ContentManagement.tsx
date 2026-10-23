@@ -466,7 +466,7 @@ export function ContentManagement({
 										/>
 									</div>
 									<Button
-										variant="dark"
+										variant="primary"
 										disabled={!canStart}
 										spinner={transferMutation.isPending}
 										onClick={() => transferMutation.mutate()}

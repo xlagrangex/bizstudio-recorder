@@ -504,7 +504,7 @@ const SignupWithSSO = ({
 			<div>
 				<Button
 					type="submit"
-					variant="dark"
+					variant="primary"
 					className="w-full max-w-full"
 					disabled={loading}
 					spinner={loading}
@@ -554,7 +554,7 @@ const NormalSignup = ({
 					}}
 				/>
 				<MotionButton
-					variant="dark"
+					variant="primary"
 					type="submit"
 					disabled={loading || emailSent}
 					spinner={loading}

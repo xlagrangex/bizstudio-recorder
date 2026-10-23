@@ -349,7 +349,7 @@ export function MoveItemsDialog({
 						Cancel
 					</Button>
 					<Button
-						variant="dark"
+						variant="primary"
 						size="sm"
 						spinner={moveMutation.isPending}
 						disabled={

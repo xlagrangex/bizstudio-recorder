@@ -241,7 +241,7 @@ export const MembersCard = ({ setIsInviteDialogOpen }: MembersCardProps) => {
 					<Button
 						type="button"
 						size="sm"
-						variant="dark"
+						variant="primary"
 						className="px-6 min-w-auto"
 						onClick={() => {
 							if (!canManageMembers) {

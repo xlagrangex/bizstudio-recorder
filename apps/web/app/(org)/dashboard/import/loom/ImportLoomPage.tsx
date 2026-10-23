@@ -697,7 +697,7 @@ export const ImportLoomPage = ({
 									onClick={handleSingleImport}
 									size="sm"
 									spinner={isImporting}
-									variant="dark"
+									variant="primary"
 									disabled={
 										!isValidLoomUrl || isImporting || !destinationAvailable
 									}
@@ -780,7 +780,7 @@ export const ImportLoomPage = ({
 										<Button
 											type="button"
 											onClick={() => inputRef.current?.click()}
-											variant="dark"
+											variant="white"
 											size="sm"
 											className="mt-2"
 										>
@@ -977,7 +977,7 @@ export const ImportLoomPage = ({
 										</Button>
 										<Button
 											type="button"
-											variant="dark"
+											variant="primary"
 											size="sm"
 											disabled={!canImport}
 											onClick={() => setConfirmOpen(true)}
@@ -1100,7 +1100,7 @@ export const ImportLoomPage = ({
 							onClick={handleCsvImport}
 							size="sm"
 							spinner={isCsvImporting}
-							variant="dark"
+							variant="primary"
 							disabled={!canImport}
 						>
 							{isCsvImporting

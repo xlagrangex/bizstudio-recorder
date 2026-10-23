@@ -253,7 +253,7 @@ export const InviteDialog = ({ isOpen, setIsOpen }: InviteDialogProps) => {
 					<Button
 						type="button"
 						size="sm"
-						variant="dark"
+						variant="primary"
 						spinner={sendInvites.isPending}
 						disabled={
 							sendInvites.isPending ||

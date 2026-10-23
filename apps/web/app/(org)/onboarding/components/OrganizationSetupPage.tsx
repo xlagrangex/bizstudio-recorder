@@ -150,7 +150,7 @@ export function OrganizationSetupPage({
 				<div className="w-full h-px bg-gray-4" />
 				<Button
 					type="submit"
-					variant="dark"
+					variant="primary"
 					className="mx-auto w-full"
 					spinner={orgSetupMutation.isPending}
 					disabled={orgSetupMutation.isPending}

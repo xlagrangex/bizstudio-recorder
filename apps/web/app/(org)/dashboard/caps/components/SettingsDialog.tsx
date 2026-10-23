@@ -283,7 +283,7 @@ export const SettingsDialog = ({
 						Cancel
 					</Button>
 					<Button
-						variant="dark"
+						variant="primary"
 						size="sm"
 						onClick={saveHandler}
 						spinner={saveLoading}

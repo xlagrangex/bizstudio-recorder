@@ -121,7 +121,7 @@ export const CliApiKeys = ({
 				<Button
 					type="button"
 					size="sm"
-					variant="dark"
+					variant="primary"
 					icon={<KeyRound className="size-4" />}
 					onClick={() => setCreateOpen(true)}
 				>
@@ -233,7 +233,7 @@ export const CliApiKeys = ({
 							<Button
 								type="submit"
 								size="sm"
-								variant="dark"
+								variant="primary"
 								disabled={name.trim().length === 0 || createMutation.isPending}
 								spinner={createMutation.isPending}
 							>
@@ -271,7 +271,7 @@ export const CliApiKeys = ({
 						<Button
 							type="button"
 							size="sm"
-							variant="dark"
+							variant="primary"
 							onClick={() => setMintedToken(null)}
 						>
 							Done

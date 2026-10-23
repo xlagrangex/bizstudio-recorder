@@ -15,7 +15,7 @@ export function AppsListClient() {
 		<>
 			<div className="flex justify-between items-center mb-5">
 				<h2 className="text-base font-medium text-gray-12">Your Apps</h2>
-				<Button variant="dark" size="sm" onClick={() => setCreateOpen(true)}>
+				<Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
 					<Plus className="w-4 h-4 mr-1" />
 					Create App
 				</Button>
@@ -27,7 +27,11 @@ export function AppsListClient() {
 					<p className="mb-4 text-xs text-gray-9">
 						Create your first app to get started with the Developer SDK
 					</p>
-					<Button variant="dark" size="sm" onClick={() => setCreateOpen(true)}>
+					<Button
+						variant="primary"
+						size="sm"
+						onClick={() => setCreateOpen(true)}
+					>
 						Create your first app
 					</Button>
 				</div>

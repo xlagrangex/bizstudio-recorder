@@ -244,7 +244,7 @@ export function InviteTeamPage() {
 			</div>
 			<div className="w-full h-px bg-gray-4" />
 			<Button
-				variant="dark"
+				variant="primary"
 				className="mx-auto w-full"
 				onClick={handleSubmit}
 				spinner={inviteTeamMutation.isPending}

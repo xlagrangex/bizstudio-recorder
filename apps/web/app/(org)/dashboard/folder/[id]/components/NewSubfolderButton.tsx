@@ -21,7 +21,7 @@ export const NewSubfolderButton = ({
 			<Button
 				onClick={() => setOpenDialog(true)}
 				size="sm"
-				variant="dark"
+				variant="white"
 				className="flex gap-2 items-center"
 			>
 				<FontAwesomeIcon className="size-3.5" icon={faFolderPlus} />

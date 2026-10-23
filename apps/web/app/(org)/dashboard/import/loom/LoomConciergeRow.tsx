@@ -194,7 +194,7 @@ export function LoomConciergeRow({
 						/>
 						<Button
 							type="submit"
-							variant="dark"
+							variant="primary"
 							size="sm"
 							className="self-end"
 							spinner={answerMutation.isPending}
@@ -271,7 +271,7 @@ export function LoomConciergeRow({
 							<Button
 								type="submit"
 								size="sm"
-								variant="dark"
+								variant="primary"
 								spinner={requestMutation.isPending}
 								disabled={requestMutation.isPending}
 							>

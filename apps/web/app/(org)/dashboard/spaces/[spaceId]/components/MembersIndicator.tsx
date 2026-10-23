@@ -285,7 +285,7 @@ export const MembersIndicator = ({
 								}
 								disabled={isLoading}
 								spinner={isLoading}
-								variant="dark"
+								variant="primary"
 								size="sm"
 							>
 								Save
@@ -296,7 +296,7 @@ export const MembersIndicator = ({
 			</Dialog>
 
 			{onAddVideos && (
-				<Button variant="dark" size="sm" onClick={onAddVideos}>
+				<Button variant="primary" size="sm" onClick={onAddVideos}>
 					<FontAwesomeIcon className="size-3" icon={faPlus} />
 					Add videos
 				</Button>

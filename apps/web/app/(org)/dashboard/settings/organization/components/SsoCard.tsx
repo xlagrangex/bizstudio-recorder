@@ -322,7 +322,7 @@ export function SsoCard({
 							<Button
 								type="button"
 								size="sm"
-								variant="dark"
+								variant="primary"
 								onClick={() => openPortal()}
 								disabled={busy || !settings.ssoAvailable}
 								spinner={pendingAction === "portal"}
@@ -402,7 +402,7 @@ export function SsoCard({
 								<Button
 									type="button"
 									size="sm"
-									variant="dark"
+									variant="primary"
 									disabled={
 										busy ||
 										!settings.ssoAvailable ||

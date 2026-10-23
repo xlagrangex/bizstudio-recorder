@@ -109,9 +109,8 @@ export function ApiKeysClient() {
 								Cancel
 							</Button>
 							<Button
-								variant="dark"
+								variant="destructive"
 								size="sm"
-								className="!bg-red-400 hover:!bg-red-300"
 								spinner={regenerateMutation.isPending}
 								disabled={regenerateMutation.isPending}
 								onClick={() => regenerateMutation.mutate()}

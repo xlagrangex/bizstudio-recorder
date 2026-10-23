@@ -155,7 +155,7 @@ export const NewFolderDialog: React.FC<Props> = ({
 						}}
 						size="sm"
 						spinner={createFolder.isPending}
-						variant="dark"
+						variant="primary"
 						disabled={
 							!selectedColor ||
 							!folderName.trim().length ||

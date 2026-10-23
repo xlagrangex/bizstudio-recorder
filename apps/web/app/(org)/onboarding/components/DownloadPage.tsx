@@ -83,7 +83,7 @@ export function DownloadPage() {
 						router.push(consumeOnboardingNextPath("/dashboard/caps"))
 					}
 					className="min-w-[120px]"
-					variant="dark"
+					variant="primary"
 					size="lg"
 				>
 					Continue

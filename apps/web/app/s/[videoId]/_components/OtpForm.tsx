@@ -175,7 +175,7 @@ const OtpForm = ({
 			</div>
 
 			<Button
-				variant="dark"
+				variant="primary"
 				className="w-full"
 				spinner={isVerifying}
 				onClick={() => {

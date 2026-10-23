@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import { Button } from "@cap/ui";
 import type { Video } from "@cap/web-domain";
 import Link from "next/link";
@@ -19,7 +20,7 @@ export function PrivateAccessActions({ videoId }: { videoId: Video.VideoId }) {
 					view this recording.
 				</p>
 				<Button
-					variant="dark"
+					variant="primary"
 					onClick={() => signOut({ callbackUrl: loginUrl })}
 				>
 					Switch account
@@ -27,6 +28,14 @@ export function PrivateAccessActions({ videoId }: { videoId: Video.VideoId }) {
 			</div>
 		);
 	}
+
+	if (!buildEnv.NEXT_PUBLIC_IS_CAP)
+		return (
+			<p>
+				If you have access, <Link href={loginUrl}>sign in</Link> using the email
+				address that was invited.
+			</p>
+		);
 
 	return (
 		<p>
