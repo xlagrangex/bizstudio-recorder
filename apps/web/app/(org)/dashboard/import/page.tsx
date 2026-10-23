@@ -6,7 +6,7 @@ import {
 import { ImportPage } from "./ImportPage";
 
 export const metadata: Metadata = {
-	title: "Import — Cap",
+	title: "Import — Bizstudio Recorder",
 };
 
 export default async function Page({

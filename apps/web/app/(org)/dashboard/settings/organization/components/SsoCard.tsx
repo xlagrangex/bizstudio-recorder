@@ -229,9 +229,9 @@ export function SsoCard({
 					<CardHeader>
 						<CardTitle>SAML SSO</CardTitle>
 						<CardDescription className="max-w-xl">
-							Let your team sign in to Cap with your organization's identity
-							provider, including Okta, Microsoft Entra ID, and Google
-							Workspace.
+							Let your team sign in to Bizstudio Recorder with your
+							organization's identity provider, including Okta, Microsoft Entra
+							ID, and Google Workspace.
 						</CardDescription>
 					</CardHeader>
 				</div>
@@ -250,7 +250,7 @@ export function SsoCard({
 					<span className="font-medium text-gray-12">
 						{settings.organizationName}
 					</span>{" "}
-					as members. Cap Pro seats are billed separately from this add-on.
+					as members. Pro seats are billed separately from this add-on.
 				</p>
 
 				{!settings.ssoAvailable && (

@@ -23,10 +23,7 @@ export const UsageButton = memo(
 		if (subscribed) {
 			if (sidebarCollapsed) {
 				return (
-					<Tooltip
-						position="right"
-						content="Cap Pro. Unlimited shareable links."
-					>
+					<Tooltip position="right" content="Pro. Unlimited shareable links.">
 						<Link
 							className="flex justify-center mx-auto w-full"
 							href="/dashboard/settings/workspace"
@@ -59,7 +56,7 @@ export const UsageButton = memo(
 								className="mr-1 text-white size-4"
 								icon={faCheck}
 							/>
-							<p className="text-white">Cap Pro</p>
+							<p className="text-white">Pro</p>
 						</Button>
 					</Link>
 				</div>

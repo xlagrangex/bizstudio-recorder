@@ -1,11 +1,9 @@
-import { CAP_LOGO_URL } from "@cap/utils";
 import {
 	Body,
 	Container,
 	Head,
 	Heading,
 	Html,
-	Img,
 	Preview,
 	Section,
 	Tailwind,
@@ -26,28 +24,25 @@ export function SignedBaa({
 		<Html>
 			<Head />
 			<Preview>
-				Your Business Associate Agreement with Cap is signed and active
+				Your Business Associate Agreement with Bizstudio Recorder is signed and
+				active
 			</Preview>
 			<Tailwind>
 				<Body className="mx-auto my-auto bg-gray-1 font-sans">
 					<Container className="mx-auto my-10 max-w-[500px] rounded border border-solid border-gray-200 px-10 py-5">
 						<Section className="mt-8">
-							<Img
-								src={CAP_LOGO_URL}
-								width="40"
-								height="40"
-								alt="Cap"
-								className="mx-auto my-0"
-							/>
+							<Text className="m-0 text-center text-lg font-semibold text-black">
+								Bizstudio Recorder
+							</Text>
 						</Section>
 						<Heading className="mx-0 my-7 p-0 text-center text-xl font-semibold text-black">
 							Your signed BAA is attached
 						</Heading>
 						<Text className="text-sm leading-6 text-black">
-							The Business Associate Agreement between {entityName} and Cap
-							Software, Inc. has been executed, effective {effectiveDate}. A
-							fully signed copy is attached to this email as a PDF for your
-							records.
+							The Business Associate Agreement between {entityName} and
+							Bizstudio Recorder Software, Inc. has been executed, effective{" "}
+							{effectiveDate}. A fully signed copy is attached to this email as
+							a PDF for your records.
 						</Text>
 						<Text className="text-sm leading-6 text-black">
 							The Signed BAA add-on is now active on your organization and bills

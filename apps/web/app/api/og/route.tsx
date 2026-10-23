@@ -75,7 +75,11 @@ export async function GET(req: NextRequest) {
 			<div
 				style={{ display: "flex", position: "absolute", left: 668, top: 112 }}
 			>
-				<DesktopArt mesh={assets.mesh} wallpaper={assets.wallpaper} />
+				<DesktopArt
+					mesh={assets.mesh}
+					wallpaper={assets.wallpaper}
+					mascot={assets.mascot}
+				/>
 			</div>
 		);
 
@@ -95,7 +99,7 @@ export async function GET(req: NextRequest) {
 					justifyContent: "space-between",
 				}}
 			>
-				<CapWordmark />
+				<CapWordmark mascot={assets.mascot} />
 				<div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
 					<Headline size={titleFontSize(title)} lines={4}>
 						{title}

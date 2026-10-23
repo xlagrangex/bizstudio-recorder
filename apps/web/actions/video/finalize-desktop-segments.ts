@@ -35,7 +35,7 @@ export async function finalizeDesktopSegmentsRecording({
 	}
 	if (result.status === "source-incomplete") {
 		throw new Error(
-			"This recording has not finished uploading. Keep Cap open on the recording device to complete the upload. Uploaded files are retained.",
+			"This recording has not finished uploading. Keep Bizstudio Recorder open on the recording device to complete the upload. Uploaded files are retained.",
 		);
 	}
 

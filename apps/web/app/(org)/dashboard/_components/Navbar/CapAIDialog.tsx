@@ -44,8 +44,8 @@ const CapAIDialog = ({ setOpen }: { setOpen: (open: boolean) => void }) => {
 				<CapAIArt className="w-full max-w-[450px] mx-auto h-[240px]" />
 				<div className="pt-5 space-y-4">
 					<p className="text-base text-gray-11">
-						Cap AI automatically processes your recordings to make them more
-						useful and accessible.
+						AI automatically processes your recordings to make them more useful
+						and accessible.
 					</p>
 					<h4 className="text-sm font-medium text-gray-12">
 						Features include:

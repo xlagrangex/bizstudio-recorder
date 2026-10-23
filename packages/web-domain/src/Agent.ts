@@ -2253,9 +2253,8 @@ export class AgentApiContract extends HttpApi.make("cap-agent-api")
 	.add(AgentManagementHttpApi)
 	.annotateContext(
 		OpenApi.annotations({
-			title: "Cap Agent API",
-			description:
-				"Stable personal-library API used by Cap CLI and MCP clients",
+			title: "Bizstudio Recorder Agent API",
+			description: "Stable personal-library API used by CLI and MCP clients",
 		}),
 	)
 	.prefix("/api/v1") {}

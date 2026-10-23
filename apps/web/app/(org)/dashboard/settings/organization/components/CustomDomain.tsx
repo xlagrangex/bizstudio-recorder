@@ -97,7 +97,7 @@ export function CustomDomain() {
 								Custom Domain
 							</h1>
 							<p className="w-full text-sm text-gray-10">
-								Setup a custom domain for your organization's shared caps.
+								Setup a custom domain for your organization's shared videos.
 							</p>
 						</div>
 					</div>

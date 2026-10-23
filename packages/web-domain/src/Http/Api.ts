@@ -5,8 +5,8 @@ export class ApiContract extends HttpApi.make("cap-web-api")
 	.add(ExtensionHttpApi.prefix(EXTENSION_HTTP_PREFIX))
 	.annotateContext(
 		OpenApi.annotations({
-			title: "Cap HTTP API",
-			description: "Internal API used by Cap Desktop and external services",
+			title: "Bizstudio Recorder HTTP API",
+			description: "Internal API used by the desktop app and external services",
 		}),
 	)
 	.prefix("/api") {}

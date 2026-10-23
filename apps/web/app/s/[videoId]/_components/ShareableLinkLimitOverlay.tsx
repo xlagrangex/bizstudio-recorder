@@ -11,7 +11,7 @@ const LIMIT = Video.FREE_PLAN_SHAREABLE_LINKS_PER_MONTH;
 const PRO_BENEFITS = [
 	{ icon: Share2, label: "Unlimited shareable links" },
 	{ icon: InfinityIcon, label: "No recording length limits" },
-	{ icon: BarChart3, label: "Analytics, Cap AI and password protection" },
+	{ icon: BarChart3, label: "Analytics, AI and password protection" },
 ];
 
 export function ShareableLinkLimitOverlay({
@@ -41,8 +41,8 @@ export function ShareableLinkLimitOverlay({
 				</h3>
 				<p className="mt-2 max-w-sm text-xs leading-relaxed sm:text-sm text-white/60">
 					{isOwner
-						? `You've used all ${LIMIT} shareable links included with Cap's free plan this month. Upgrade to Cap Pro and this video becomes instantly viewable, along with everything else you record.`
-						: `The owner of this video has used all ${LIMIT} shareable links included with Cap's free plan this month. As soon as they upgrade to Cap Pro, this video will be instantly viewable.`}
+						? `You've used all ${LIMIT} shareable links included with the free plan this month. Upgrade to Pro and this video becomes instantly viewable, along with everything else you record.`
+						: `The owner of this video has used all ${LIMIT} shareable links included with the free plan this month. As soon as they upgrade to Pro, this video will be instantly viewable.`}
 				</p>
 				<div className="hidden flex-col gap-2 items-start mt-5 sm:flex">
 					{PRO_BENEFITS.map(({ icon: Icon, label }) => (
@@ -60,7 +60,7 @@ export function ShareableLinkLimitOverlay({
 						onClick={onUpgrade}
 						onPointerEnter={onUpgradeHover}
 					>
-						Upgrade to Cap Pro
+						Upgrade to Pro
 					</Button>
 				) : (
 					<Button
@@ -70,13 +70,13 @@ export function ShareableLinkLimitOverlay({
 						href={buildEnv.NEXT_PUBLIC_WEB_URL}
 						target="_blank"
 					>
-						Record with Cap for free
+						Record with Bizstudio Recorder
 					</Button>
 				)}
 				<p className="mt-3 text-xs text-white/40">
 					{isOwner
 						? "Videos recorded in Studio mode are saved to your device, free and unlimited."
-						: `Cap's free plan includes ${LIMIT} shareable links per month.`}
+						: `The free plan includes ${LIMIT} shareable links per month.`}
 				</p>
 			</div>
 		</div>

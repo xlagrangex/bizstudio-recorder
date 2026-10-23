@@ -46,7 +46,7 @@ export async function editAiContent(
 	if (!isAiGenerationEnabledForUser(user)) {
 		return {
 			success: false,
-			message: "Cap Pro is required to edit AI content.",
+			message: "Pro is required to edit AI content.",
 		};
 	}
 	const parsed = editAiContentSchema.safeParse(input);

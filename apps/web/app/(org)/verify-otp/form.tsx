@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import { Button, LogoBadge } from "@cap/ui";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -230,22 +231,30 @@ export function VerifyOTPForm({
 
 			<p className="mt-6 text-xs text-center text-gray-9">
 				By entering your email, you acknowledge that you have both read and
-				agree to Cap's{" "}
-				<Link
-					href="/terms"
-					target="_blank"
-					className="text-xs font-semibold text-gray-12 hover:text-blue-300"
-				>
-					Terms of Service
-				</Link>{" "}
+				agree to the{" "}
+				{buildEnv.NEXT_PUBLIC_IS_CAP ? (
+					<Link
+						href="/terms"
+						target="_blank"
+						className="text-xs font-semibold text-gray-12 hover:text-blue-300"
+					>
+						Terms of Service
+					</Link>
+				) : (
+					"Terms of Service"
+				)}{" "}
 				and{" "}
-				<Link
-					href="/privacy"
-					target="_blank"
-					className="text-xs font-semibold text-gray-12 hover:text-blue-300"
-				>
-					Privacy Policy
-				</Link>
+				{buildEnv.NEXT_PUBLIC_IS_CAP ? (
+					<Link
+						href="/privacy"
+						target="_blank"
+						className="text-xs font-semibold text-gray-12 hover:text-blue-300"
+					>
+						Privacy Policy
+					</Link>
+				) : (
+					"Privacy Policy"
+				)}
 				.
 			</p>
 		</motion.div>

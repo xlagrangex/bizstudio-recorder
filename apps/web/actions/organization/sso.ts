@@ -123,7 +123,7 @@ export async function getOrganizationSsoSettings(
 			? { name: connection.name, state: connection.state }
 			: null,
 		connectionIssue: configuration?.requiresConnectionSelection
-			? "Multiple SSO connections are active. Open Manage SSO to keep one active connection, or contact Cap support to select the default connection."
+			? "Multiple SSO connections are active. Open Manage SSO to keep one active connection, or contact your administrator to select the default connection."
 			: undefined,
 		signInUrl:
 			entitled &&

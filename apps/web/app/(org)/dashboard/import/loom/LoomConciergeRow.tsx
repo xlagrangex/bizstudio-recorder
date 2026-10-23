@@ -126,7 +126,7 @@ export function LoomConciergeRow({
 		? statusCopy(request)
 		: {
 				title: "Moving a whole Loom workspace?",
-				body: "We'll move it for you, keeping owners and spaces. Included with Cap Pro.",
+				body: "We'll move it for you, keeping owners and spaces. Included with Pro.",
 			};
 
 	return (

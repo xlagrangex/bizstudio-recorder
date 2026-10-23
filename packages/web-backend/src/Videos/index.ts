@@ -626,7 +626,7 @@ export class Videos extends Effect.Service<Videos>()("Videos", {
 					const createData: RepoCreateVideoInput = {
 						ownerId: user.id,
 						orgId: input.orgId,
-						name: `Cap Recording - ${formattedDate}`,
+						name: `Recording - ${formattedDate}`,
 						public: yield* Effect.tryPromise({
 							try: () => getNewVideoPublic(input.orgId),
 							catch: (cause) => new DatabaseError({ cause }),

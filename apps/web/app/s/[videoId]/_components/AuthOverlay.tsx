@@ -1,4 +1,4 @@
-import { NODE_ENV } from "@cap/env";
+import { buildEnv, NODE_ENV } from "@cap/env";
 import { Button, Dialog, DialogContent, Input, LogoBadge } from "@cap/ui";
 import { faArrowLeft, faEnvelope } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -89,22 +89,30 @@ export const AuthOverlay: React.FC<AuthOverlayProps> = ({
 						)}
 						<p className="mt-6 text-xs text-center text-gray-9">
 							By entering your email, you acknowledge that you have both read
-							and agree to Cap's{" "}
-							<Link
-								href="/terms"
-								target="_blank"
-								className="text-xs font-semibold text-gray-12 hover:text-blue-300"
-							>
-								Terms of Service
-							</Link>{" "}
+							and agree to the{" "}
+							{buildEnv.NEXT_PUBLIC_IS_CAP ? (
+								<Link
+									href="/terms"
+									target="_blank"
+									className="text-xs font-semibold text-gray-12 hover:text-blue-300"
+								>
+									Terms of Service
+								</Link>
+							) : (
+								"Terms of Service"
+							)}{" "}
 							and{" "}
-							<Link
-								href="/privacy"
-								target="_blank"
-								className="text-xs font-semibold text-gray-12 hover:text-blue-300"
-							>
-								Privacy Policy
-							</Link>
+							{buildEnv.NEXT_PUBLIC_IS_CAP ? (
+								<Link
+									href="/privacy"
+									target="_blank"
+									className="text-xs font-semibold text-gray-12 hover:text-blue-300"
+								>
+									Privacy Policy
+								</Link>
+							) : (
+								"Privacy Policy"
+							)}
 							.
 						</p>
 					</div>

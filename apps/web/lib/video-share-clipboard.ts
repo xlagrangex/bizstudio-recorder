@@ -47,7 +47,7 @@ export const richVideoLinkHtml = ({
 		`<img src="${safeImage}" alt="${safeTitle}" width="420" style="display:block;width:420px;max-width:100%;border-radius:10px;" />` +
 		`</a>` +
 		`<p style="margin:8px 0 0 0;">` +
-		`<a href="${safeUrl}">${safeTitle}</a> — Watch on Cap` +
+		`<a href="${safeUrl}">${safeTitle}</a> — Watch on Bizstudio Recorder` +
 		`</p>` +
 		`</div>`
 	);

@@ -84,7 +84,7 @@ export async function toggleProSeat(
 			});
 			if (!seatProvider) {
 				throw new Error(
-					"An active Cap Pro subscription is required before assigning seats.",
+					"An active Pro subscription is required before assigning seats.",
 				);
 			}
 

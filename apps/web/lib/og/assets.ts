@@ -9,6 +9,7 @@ const FILES = {
 	skyCenter: "sky-center.jpg",
 	mesh: "mesh-instant.jpg",
 	wallpaper: "wallpaper.jpg",
+	mascot: "mascot.png",
 } as const;
 
 export type OgAssets = Record<keyof typeof FILES, string>;
@@ -19,7 +20,8 @@ const loadAsset = async (file: string) => {
 	const data = await readFile(
 		path.join(process.cwd(), "lib", "og", "assets", file),
 	);
-	return `data:image/jpeg;base64,${data.toString("base64")}`;
+	const mime = file.endsWith(".png") ? "image/png" : "image/jpeg";
+	return `data:${mime};base64,${data.toString("base64")}`;
 };
 
 export const loadOgAssets = () => {

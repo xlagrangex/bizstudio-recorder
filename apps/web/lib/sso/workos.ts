@@ -27,7 +27,7 @@ export async function getSsoConfiguration(organization: CapOrganization) {
 	}
 	if (connections.listMetadata.after) {
 		throw new Error(
-			"This organization has too many SSO connections. Please contact Cap support.",
+			"This organization has too many SSO connections. Please contact your administrator.",
 		);
 	}
 	const active = connections.data.filter(

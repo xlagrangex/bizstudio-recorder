@@ -52,7 +52,7 @@ export const describeShareAudience = ({
 			return {
 				kind: "public",
 				label: "Restricted link access",
-				tooltip: `Only signed-in people whose email matches ${allowedEmailDomain.trim()} or invited viewers can watch this Cap.${passwordProtected ? " A password is also required." : ""}`,
+				tooltip: `Only signed-in people whose email matches ${allowedEmailDomain.trim()} or invited viewers can watch this video.${passwordProtected ? " A password is also required." : ""}`,
 			};
 		}
 		return {
@@ -61,8 +61,8 @@ export const describeShareAudience = ({
 				? "Anyone with the password"
 				: "Anyone with the link",
 			tooltip: passwordProtected
-				? "Anyone who has this link and the password can watch this Cap."
-				: "Anyone who has this link can watch this Cap, including people outside your organization.",
+				? "Anyone who has this link and the password can watch this video."
+				: "Anyone who has this link can watch this video, including people outside your organization.",
 		};
 	}
 
@@ -85,15 +85,15 @@ export const describeShareAudience = ({
 					: listNames(listed, total),
 			tooltip:
 				viewerCount > 0
-					? `Only ${spaceDescription} and ${viewerCount} invited ${viewerCount === 1 ? "person" : "people"} can watch this Cap.${passwordProtected ? " A password is also required." : ""}`
-					: `Only ${spaceDescription} can watch this Cap. The link won't work for anyone else.`,
+					? `Only ${spaceDescription} and ${viewerCount} invited ${viewerCount === 1 ? "person" : "people"} can watch this video.${passwordProtected ? " A password is also required." : ""}`
+					: `Only ${spaceDescription} can watch this video. The link won't work for anyone else.`,
 		};
 	}
 	if (viewerCount > 0) {
 		return {
 			kind: "people",
 			label: `Shared with ${viewerCount} ${viewerCount === 1 ? "person" : "people"}`,
-			tooltip: `Only invited people can watch this Cap after signing in with their invited email address.${passwordProtected ? " A password is also required." : ""}`,
+			tooltip: `Only invited people can watch this video after signing in with their invited email address.${passwordProtected ? " A password is also required." : ""}`,
 		};
 	}
 
@@ -101,6 +101,6 @@ export const describeShareAudience = ({
 		kind: "private",
 		label: "Only you",
 		tooltip:
-			"Nobody else can watch this Cap yet. Click to share it with a space or turn on the public link.",
+			"Nobody else can watch this video yet. Click to share it with a space or turn on the public link.",
 	};
 };

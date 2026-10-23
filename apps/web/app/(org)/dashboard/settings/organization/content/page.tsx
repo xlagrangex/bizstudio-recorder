@@ -3,7 +3,7 @@ import { getContentManagementSetup } from "@/actions/organization/content-transf
 import { ContentManagement } from "./ContentManagement";
 
 export const metadata: Metadata = {
-	title: "Content Management — Cap",
+	title: "Content Management — Bizstudio Recorder",
 };
 
 export default async function OrganizationContentPage() {

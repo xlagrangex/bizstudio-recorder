@@ -131,7 +131,7 @@ function ExternalLinkWarning({
 					/>
 					<div className="min-w-0">
 						<p className="text-sm font-medium leading-tight text-gray-12">
-							This link leads outside Cap
+							This link leads outside Bizstudio Recorder
 						</p>
 						<p className="mt-1 text-xs font-medium break-all text-gray-11">
 							{host}

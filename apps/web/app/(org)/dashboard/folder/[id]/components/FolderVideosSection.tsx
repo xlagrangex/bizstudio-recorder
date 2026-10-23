@@ -84,7 +84,7 @@ export default function FolderVideosSection({
 					}`;
 				},
 				error: (error) =>
-					error.message || "An error occurred while deleting caps",
+					error.message || "An error occurred while deleting videos",
 			});
 
 			return yield* fiber.await.pipe(Effect.flatten);
@@ -98,11 +98,11 @@ export default function FolderVideosSection({
 	const { mutate: deleteCap, isPending: isDeletingCap } = useEffectMutation({
 		mutationFn: (id: Video.VideoId) => rpc.VideoDelete(id),
 		onSuccess: () => {
-			toast.success("Cap deleted successfully");
+			toast.success("Video deleted successfully");
 			router.refresh();
 		},
 		onError: () => {
-			toast.error("Failed to delete cap");
+			toast.error("Failed to delete video");
 		},
 	});
 

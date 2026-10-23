@@ -122,7 +122,8 @@ export function validateCallToAction(
 	const url = (input.url ?? "").trim();
 	const normalizedUrl = url ? normalizeCallToActionUrl(url) : null;
 	if (!url) errors.url = "Add where the button should go";
-	else if (!normalizedUrl) errors.url = "Enter a valid link, like cap.so/demo";
+	else if (!normalizedUrl)
+		errors.url = "Enter a valid link, like example.com/demo";
 
 	const headline = collapseWhitespace(input.headline ?? "");
 	if (headline.length > CTA_HEADLINE_MAX_LENGTH)

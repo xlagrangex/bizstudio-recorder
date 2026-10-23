@@ -52,7 +52,7 @@ const ApiLive = HttpApiBuilder.api(Api).pipe(
 					}
 					const videoId = parseCapShareUrl(urlParams.url);
 					if (!videoId) {
-						return jsonResponse({ error: "Invalid Cap share URL" }, 400);
+						return jsonResponse({ error: "Invalid share URL" }, 400);
 					}
 					const video = yield* Effect.tryPromise(() =>
 						getPublicShareVideo(Video.VideoId.make(videoId)),

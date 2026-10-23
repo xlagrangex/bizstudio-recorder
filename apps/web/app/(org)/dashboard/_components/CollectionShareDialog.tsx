@@ -87,7 +87,7 @@ export const CollectionShareDialog = ({
 					icon={<FontAwesomeIcon icon={faGlobe} className="size-3.5" />}
 					description={
 						isPublic
-							? `Anyone with the link can browse the public caps in this ${kind}.`
+							? `Anyone with the link can browse the public videos in this ${kind}.`
 							: `Publish this ${kind} as a clean, browsable page you can share with anyone.`
 					}
 				>
@@ -248,7 +248,10 @@ export const CollectionShareDialog = ({
 
 							<FieldGroup title="Layout">
 								<div className="divide-y divide-gray-4">
-									<SettingRow label="Style" description="How caps are arranged">
+									<SettingRow
+										label="Style"
+										description="How videos are arranged"
+									>
 										<Select
 											size="sm"
 											value={settings.layout}
@@ -265,7 +268,7 @@ export const CollectionShareDialog = ({
 									{settings.layout === "grid" && (
 										<SettingRow
 											label="Columns"
-											description="Caps shown per row"
+											description="Videos shown per row"
 										>
 											<Select
 												size="sm"

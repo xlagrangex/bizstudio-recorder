@@ -76,6 +76,28 @@ services:
       PORT: 3456
       MEDIA_SERVER_WEBHOOK_SECRET: ${MEDIA_SERVER_WEBHOOK_SECRET}
 
+  worker:
+    <<: *secrets
+    build: ./worker
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      POLL_SECONDS: 20
+      BRAIN_REPO: git@github.com:xlagrangex/bizstudio-secondbrain.git
+      BRAIN_BRANCH: ${WORKER_BRAIN_BRANCH:-main}
+      GIT_SSH_COMMAND: ssh -i /run/brain_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/state/known_hosts
+    volumes:
+      - ${BIZREC_DATA:-/root/bizstudio-recorder}/worker-state:/state
+      - /root/.ssh/id_ed25519_github:/run/brain_key:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys,time; sys.exit(time.time() - os.path.getmtime('/state/heartbeat') > 1800)"]
+      interval: 60s
+      start_period: 60s
+
   cap-web:
     image: ghcr.io/capsoftware/cap-web:latest
     restart: unless-stopped

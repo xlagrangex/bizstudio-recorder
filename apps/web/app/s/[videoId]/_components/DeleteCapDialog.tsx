@@ -30,11 +30,11 @@ export default function DeleteCapDialog({
 	const deleteMutation = useEffectMutation({
 		mutationFn: () => rpc.VideoDelete(videoId),
 		onSuccess: () => {
-			toast.success("Cap deleted successfully");
+			toast.success("Video deleted successfully");
 			push("/dashboard/caps?page=1");
 		},
 		onError: () => {
-			toast.error("Failed to delete Cap");
+			toast.error("Failed to delete video");
 		},
 		onSettled: () => {
 			onClose();
@@ -45,8 +45,8 @@ export default function DeleteCapDialog({
 		<ConfirmationDialog
 			open={open}
 			icon={<FontAwesomeIcon icon={faVideo} />}
-			title="Delete Cap"
-			description={`Are you sure you want to delete the cap "${videoTitle}"? This action cannot be undone.`}
+			title="Delete video"
+			description={`Are you sure you want to delete the video "${videoTitle}"? This action cannot be undone.`}
 			confirmLabel={deleteMutation.isPending ? "Deleting..." : "Delete"}
 			confirmVariant="destructive"
 			loading={deleteMutation.isPending}

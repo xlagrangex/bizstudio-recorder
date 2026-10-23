@@ -278,7 +278,7 @@ export function getContentTransferStorageBlockReason({
 }) {
 	if (sourceOwnerId === targetUserId) return null;
 	if (bucketId && storageIntegrationId) {
-		return "The Cap has conflicting storage assignments";
+		return "The video has conflicting storage assignments";
 	}
 	if (storageIntegrationId) {
 		if (!storageIntegrationOwnerId) return "The storage integration is missing";
@@ -288,7 +288,7 @@ export function getContentTransferStorageBlockReason({
 		) {
 			return null;
 		}
-		return "The Cap uses a personal storage integration owned by another user";
+		return "The video uses a personal storage integration owned by another user";
 	}
 	if (bucketId) {
 		if (!bucketOwnerId) return "The storage bucket is missing";
@@ -298,7 +298,7 @@ export function getContentTransferStorageBlockReason({
 		) {
 			return null;
 		}
-		return "The Cap uses a personal storage bucket owned by another user";
+		return "The video uses a personal storage bucket owned by another user";
 	}
 	return null;
 }

@@ -45,7 +45,7 @@ export const PUBLIC_LOGO_OPTIONS: {
 	value: PublicCollection.PublicCollectionLogoMode;
 	label: string;
 }[] = [
-	{ value: "cap", label: "Cap logo" },
+	{ value: "cap", label: "Bizstudio Recorder logo" },
 	{ value: "organization", label: "Organization logo" },
 	{ value: "custom", label: "Custom logo" },
 	{ value: "none", label: "No logo" },

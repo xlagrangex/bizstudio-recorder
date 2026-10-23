@@ -144,7 +144,7 @@ export function CallToActionDialog({
 
 	const previewCta: ShareCallToAction = {
 		label: form.label.trim() || PREVIEW_PLACEHOLDER_LABEL,
-		url: normalizeCallToActionUrl(form.url) ?? "https://cap.so",
+		url: normalizeCallToActionUrl(form.url) ?? "https://example.com",
 		headline: form.headline.trim() || null,
 		color: normalizeHexColor(form.color) ?? DEFAULT_CTA_COLOR,
 		showWhilePlaying: form.showWhilePlaying,

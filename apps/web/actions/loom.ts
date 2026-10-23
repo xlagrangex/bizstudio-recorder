@@ -701,7 +701,7 @@ export async function importFromLoom({
 	if (!userIsPro(user)) {
 		return {
 			success: false,
-			error: "Importing from Loom requires a Cap Pro subscription.",
+			error: "Importing from Loom requires a Pro subscription.",
 		};
 	}
 
@@ -921,7 +921,7 @@ export async function importFromLoomCsv({
 			importedCount: 0,
 			failedCount: 0,
 			results: [],
-			error: "Importing from Loom requires a Cap Pro subscription.",
+			error: "Importing from Loom requires a Pro subscription.",
 		};
 	}
 
@@ -1178,7 +1178,7 @@ async function importConciergeCsvRows({
 		throw new LoomMigrationError("The migration request is no longer active.");
 	}
 	if (!(await isOrganizationOwnerPro(request.organizationId))) {
-		throw new LoomMigrationError("The destination workspace needs Cap Pro.");
+		throw new LoomMigrationError("The destination workspace needs Pro.");
 	}
 	if (!Array.isArray(rows) || rows.length > 10) {
 		throw new LoomMigrationError(
@@ -1294,7 +1294,7 @@ export async function resumeConciergeLoomFileUpload(input: {
 			);
 		}
 		if (!(await isOrganizationOwnerPro(record.organizationId))) {
-			throw new LoomMigrationError("The destination workspace needs Cap Pro.");
+			throw new LoomMigrationError("The destination workspace needs Pro.");
 		}
 		const previousRun = record.metadata?.loomImportRun;
 		if (previousRun) {
@@ -1372,7 +1372,7 @@ async function prepareConciergeLoomFileUpload({
 	if (!request)
 		throw new LoomMigrationError("The migration request is no longer active.");
 	if (!(await isOrganizationOwnerPro(request.organizationId))) {
-		throw new LoomMigrationError("The destination workspace needs Cap Pro.");
+		throw new LoomMigrationError("The destination workspace needs Pro.");
 	}
 	const leaseToken = await reserveConciergeImport(requestId, operator.id);
 	try {
@@ -1421,7 +1421,7 @@ async function prepareConciergeLoomFileUpload({
 						existing.processingMessage !== "Uploading Loom video..."))
 			) {
 				throw new LoomMigrationError(
-					"This Loom video is already in the Cap import inventory.",
+					"This Loom video is already in the import inventory.",
 				);
 			}
 			const retryUpload = await Storage.createUploadTargetForUser(
@@ -1441,7 +1441,7 @@ async function prepareConciergeLoomFileUpload({
 					existing.storageIntegrationId
 			) {
 				throw new LoomMigrationError(
-					"The Cap storage destination changed. Review this upload before retrying.",
+					"The storage destination changed. Review this upload before retrying.",
 				);
 			}
 			const [mapped] = await db()

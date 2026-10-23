@@ -213,7 +213,7 @@ export const CapCardContent: React.FC<CapContentProps> = ({
 						/>
 					</div>
 				) : (
-					<Tooltip content={`Cap created at ${effectiveDate}`}>
+					<Tooltip content={`Created at ${effectiveDate}`}>
 						<p
 							className="text-sm truncate text-gray-10 cursor-pointer flex items-center h-full leading-[1.5rem]"
 							onClick={handleDateClick}

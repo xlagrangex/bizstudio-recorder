@@ -37,7 +37,7 @@ export function WelcomePage() {
 
 	return (
 		<Base
-			title="Welcome to Cap"
+			title="Welcome to Bizstudio Recorder"
 			description="Let's get you started"
 			hideBackButton
 		>

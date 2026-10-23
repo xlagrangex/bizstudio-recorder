@@ -200,7 +200,7 @@ describe("Loom importer component", () => {
 		);
 		expect(
 			getByRole(container, "combobox", { name: "Import to" }).textContent,
-		).toContain("My Caps / Course / Live Calls - Two");
+		).toContain("My Videos / Course / Live Calls - Two");
 		await enterUrl();
 		await act(async () => {
 			fireEvent.click(getByRole(container, "button", { name: "Import Loom" }));
@@ -216,7 +216,7 @@ describe("Loom importer component", () => {
 	it("allows choosing a different nested folder", async () => {
 		await render({ folderId: Folder.FolderId.make("child") });
 		await ready();
-		await choose("My Caps / Course / Design");
+		await choose("My Videos / Course / Design");
 		await enterUrl();
 		await act(async () => {
 			fireEvent.click(getByRole(container, "button", { name: "Import Loom" }));
@@ -239,7 +239,7 @@ describe("Loom importer component", () => {
 				}) as HTMLButtonElement
 			).disabled,
 		).toBe(true);
-		await choose("My Caps");
+		await choose("My Videos");
 		await act(async () => {
 			fireEvent.click(getByRole(container, "button", { name: "Import Loom" }));
 		});

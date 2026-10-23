@@ -31,10 +31,10 @@ const nextConfig = {
 	outputFileTracingIncludes: {
 		"/.well-known/workflow/v1/step": ffmpegTracingIncludes,
 		"/api/tools/loom-download": ffmpegTracingIncludes,
-		"/api/og": ["./lib/og/fonts/*.ttf", "./lib/og/assets/*.jpg"],
+		"/api/og": ["./lib/og/fonts/*.ttf", "./lib/og/assets/*.{jpg,png}"],
 		"/api/video/og": [
 			"./lib/og/fonts/*.ttf",
-			"./lib/og/assets/*.jpg",
+			"./lib/og/assets/*.{jpg,png}",
 			...ffmpegTracingIncludes,
 		],
 		"/dashboard/settings/organization/billing": ["./lib/baa/*.pdf"],

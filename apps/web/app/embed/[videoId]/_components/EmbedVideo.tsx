@@ -2,7 +2,7 @@
 
 import type { userSelectProps } from "@cap/database/auth/session";
 import type { comments as commentsSchema, videos } from "@cap/database/schema";
-import { NODE_ENV } from "@cap/env";
+import { buildEnv, NODE_ENV } from "@cap/env";
 import { Avatar, Logo } from "@cap/ui";
 import type { ViewerSettings } from "@cap/web-backend";
 import { AnimatePresence, motion } from "framer-motion";
@@ -373,10 +373,10 @@ export const EmbedVideo = forwardRef<
 										transition={{ duration: 0.3, delay: 0.1 }}
 										onClick={(e) => {
 											e.stopPropagation();
-											window.open("https://cap.so", "_blank");
+											window.open(buildEnv.NEXT_PUBLIC_WEB_URL, "_blank");
 										}}
 										className="hidden z-10 gap-2 items-center px-3 py-2 text-sm rounded-full border backdrop-blur-sm transition-colors duration-200 sm:flex border-white/10 w-fit text-white/80 hover:text-white bg-black/50"
-										aria-label="Powered by Cap"
+										aria-label="Powered by Bizstudio Recorder"
 									>
 										<span className="text-xs md:text-sm text-white/80">
 											Powered by

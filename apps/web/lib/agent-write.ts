@@ -536,7 +536,7 @@ export const updateAgentCap = Effect.fn("Agent.updateCap")(function* (input: {
 		(title !== undefined && (title.length === 0 || title.length > 200)) ||
 		!isAgentIdempotencyKey(input.idempotencyKey)
 	) {
-		return yield* badRequest(input.requestId, "The Cap update is invalid");
+		return yield* badRequest(input.requestId, "The video update is invalid");
 	}
 	const requestHash = hash(
 		JSON.stringify({ videoId: input.videoId, title, public: input.public }),

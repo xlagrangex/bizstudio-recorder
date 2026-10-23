@@ -6,7 +6,7 @@ import { type AnyMySqlColumn, MySqlDialect } from "drizzle-orm/mysql-core";
 import { redirect } from "next/navigation";
 import { type ComponentProps, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getOrganizationSSOData } from "@/actions/organization/get-organization-sso-data";
 import {
 	confirmOrganizationSsoCheckout,
@@ -23,6 +23,7 @@ import {
 } from "@/lib/sso/workos";
 
 const mocks = vi.hoisted(() => ({
+	buildEnv: {} as { NEXT_PUBLIC_IS_CAP?: string },
 	db: vi.fn(),
 	getCurrentUser: vi.fn(),
 	getWorkOS: vi.fn(),
@@ -62,7 +63,7 @@ vi.mock("@cap/database/auth/sso", async (importOriginal) => ({
 	getRegisteredSsoOrganization: mocks.getRegisteredSsoOrganization,
 }));
 vi.mock("@cap/env", () => ({
-	buildEnv: {},
+	buildEnv: mocks.buildEnv,
 	serverEnv: () => mocks.env,
 }));
 vi.mock("@cap/ui", () => ({
@@ -726,6 +727,25 @@ describe("organization SSO settings authorization", () => {
 });
 
 describe("organization security page SSO failure isolation", () => {
+	beforeEach(() => {
+		mocks.buildEnv.NEXT_PUBLIC_IS_CAP = "true";
+	});
+
+	afterEach(() => {
+		delete mocks.buildEnv.NEXT_PUBLIC_IS_CAP;
+	});
+
+	it("redirects self-hosted instances away from the security page", async () => {
+		makeFixture();
+		delete mocks.buildEnv.NEXT_PUBLIC_IS_CAP;
+		await expect(
+			OrganizationSecurityPage({ searchParams: Promise.resolve({}) }),
+		).rejects.toMatchObject({
+			digest: expect.stringContaining("/dashboard/settings/organization"),
+		});
+		expect(mocks.getSsoBilling).not.toHaveBeenCalled();
+	});
+
 	it.each([
 		["WorkOS", "getOrganization", 404],
 		["WorkOS", "getOrganization", 503],

@@ -40,7 +40,7 @@ const resultMessages: Record<
 	},
 	"not-configured": {
 		type: "error",
-		message: "Slack is not configured on this Cap deployment",
+		message: "Slack is not configured on this deployment",
 	},
 };
 
@@ -73,7 +73,7 @@ export function SlackIntegration({
 	const disconnect = (installation: SlackInstallation) => {
 		if (
 			!window.confirm(
-				`Disconnect ${installation.teamName} from Cap link previews?`,
+				`Disconnect ${installation.teamName} from Bizstudio Recorder link previews?`,
 			)
 		) {
 			return;
@@ -101,7 +101,7 @@ export function SlackIntegration({
 				<div className="flex-1 min-w-0">
 					<p className="text-[13px] font-medium text-gray-12">Slack</p>
 					<p className="text-[11px] text-gray-9">
-						Play public Cap recordings directly inside Slack.
+						Play public recordings directly inside Slack.
 					</p>
 				</div>
 				<span
@@ -152,7 +152,7 @@ export function SlackIntegration({
 				<div className="flex items-center justify-between gap-3">
 					<p className="text-[12px] text-gray-10">
 						{configured
-							? "Install Cap in each Slack workspace where links should open as inline players."
+							? "Install Bizstudio Recorder in each Slack workspace where links should open as inline players."
 							: "Add the Slack app credentials and database encryption key to this deployment before connecting a workspace."}
 					</p>
 					{configured ? (

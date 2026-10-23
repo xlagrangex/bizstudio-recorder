@@ -249,7 +249,7 @@ describe("video edit claims and recovery", () => {
 	});
 	it.each([
 		[{ id: "other", isPro: true }, "Forbidden"],
-		[{ id: "owner", isPro: false }, "Cap Pro"],
+		[{ id: "owner", isPro: false }, "Pro is required"],
 	] as const)(
 		"requires the recording owner with edit access",
 		async (user, message) => {

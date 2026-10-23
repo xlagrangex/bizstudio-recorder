@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import type { ButtonProps } from "@cap/ui";
 import { useCapChromeExtension } from "hooks/useCapChromeExtension";
 import type React from "react";
@@ -26,6 +27,7 @@ export function ChromeRecorderButton({
 		openRecorder();
 	};
 
+	if (buildEnv.NEXT_PUBLIC_IS_CAP !== "true") return null;
 	if (!isChromeBrowser && !isInstalled) return null;
 
 	return (

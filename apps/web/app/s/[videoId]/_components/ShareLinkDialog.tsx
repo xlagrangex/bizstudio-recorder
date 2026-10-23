@@ -144,7 +144,7 @@ export const ShareLinkDialog = ({
 			} else {
 				await copyRichVideoLink({
 					url: targetUrl,
-					title: videoTitle || "Cap Recording",
+					title: videoTitle || "Recording",
 					previewImageUrl: videoPreviewImageUrl(webUrl, videoId),
 				});
 			}
@@ -206,7 +206,7 @@ export const ShareLinkDialog = ({
 							<Lock className="mt-0.5 size-4 shrink-0 text-amber-600" />
 							<div className="min-w-0 flex-1">
 								<p className="text-sm text-amber-900">
-									This Cap isn't public, so anyone you share it with will be
+									This video isn't public, so anyone you share it with will be
 									asked to sign in and will need access.
 								</p>
 								{canManageAccess && onManageAccess && (
@@ -230,7 +230,7 @@ export const ShareLinkDialog = ({
 									href={shareTargetHref({
 										target: id,
 										url: targetUrl,
-										title: videoTitle || "Cap Recording",
+										title: videoTitle || "Recording",
 									})}
 									target="_blank"
 									rel="noopener noreferrer"

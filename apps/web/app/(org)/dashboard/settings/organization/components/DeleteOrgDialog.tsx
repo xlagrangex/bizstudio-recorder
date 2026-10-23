@@ -50,7 +50,7 @@ const DeleteOrgDialog = ({ open, onOpenChange }: DeleteOrgDialogProps) => {
 			<DialogContent>
 				<DialogHeader
 					icon={<FontAwesomeIcon className="size-3.5" icon={faTrashCan} />}
-					description="Removing your organization will delete its memberships, invites, spaces, shared videos, analytics, and Cap-hosted media. Custom storage files are not deleted."
+					description="Removing your organization will delete its memberships, invites, spaces, shared videos, analytics, and hosted media. Custom storage files are not deleted."
 				>
 					<DialogTitle>Delete Organization</DialogTitle>
 				</DialogHeader>

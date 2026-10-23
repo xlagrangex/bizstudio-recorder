@@ -8,7 +8,7 @@ const MAX_DIMENSION = 1920;
 export type OEmbedVideo = {
 	version: "1.0";
 	type: "video";
-	provider_name: "Cap";
+	provider_name: "Bizstudio Recorder";
 	provider_url: string;
 	title: string;
 	author_name?: string;
@@ -122,12 +122,12 @@ export const buildOEmbedVideo = ({
 	const embedUrl = new URL(`/embed/${video.id}`, webUrl).toString();
 	const thumbnailUrl = new URL("/api/video/og", webUrl);
 	thumbnailUrl.searchParams.set("videoId", video.id);
-	const html = `<iframe src="${embedUrl}" width="${dimensions.width}" height="${dimensions.height}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="Cap video player" style="border:0;width:100%;aspect-ratio:${dimensions.width}/${dimensions.height}" loading="lazy"></iframe>`;
+	const html = `<iframe src="${embedUrl}" width="${dimensions.width}" height="${dimensions.height}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="Bizstudio Recorder video player" style="border:0;width:100%;aspect-ratio:${dimensions.width}/${dimensions.height}" loading="lazy"></iframe>`;
 
 	return {
 		version: "1.0",
 		type: "video",
-		provider_name: "Cap",
+		provider_name: "Bizstudio Recorder",
 		provider_url: new URL("/", webUrl).toString(),
 		title: video.name,
 		...(video.ownerName ? { author_name: video.ownerName } : {}),

@@ -190,7 +190,7 @@ describe("Signed BAA entitlement", () => {
 				noticesEmail: "legal@acme.com",
 				signatureDataUrl: `data:image/png;base64,${"A".repeat(200)}`,
 			}),
-		).resolves.toEqual(failedWith("active Cap Pro subscription"));
+		).resolves.toEqual(failedWith("active Pro subscription"));
 		expect(mockStripe.subscriptions.create).not.toHaveBeenCalled();
 	});
 
@@ -225,7 +225,7 @@ describe("Signed BAA entitlement", () => {
 				noticesEmail: "legal@acme.com",
 				signatureDataUrl: `data:image/png;base64,${"A".repeat(200)}`,
 			}),
-		).resolves.toEqual(failedWith("active Cap Pro subscription"));
+		).resolves.toEqual(failedWith("active Pro subscription"));
 		expect(mockStripe.subscriptions.create).not.toHaveBeenCalled();
 	});
 
@@ -253,7 +253,7 @@ describe("Signed BAA entitlement", () => {
 				noticesEmail: "legal@acme.com",
 				signatureDataUrl: `data:image/png;base64,${"A".repeat(200)}`,
 			}),
-		).resolves.toEqual(failedWith("active Cap Pro subscription"));
+		).resolves.toEqual(failedWith("active Pro subscription"));
 		expect(mockStripe.subscriptions.create).not.toHaveBeenCalled();
 	});
 
@@ -272,7 +272,7 @@ describe("Signed BAA entitlement", () => {
 		);
 		await expect(
 			purchaseSignedBaa("org-1" as never, VALID_INPUT),
-		).resolves.toEqual(failedWith("active Cap Pro subscription"));
+		).resolves.toEqual(failedWith("active Pro subscription"));
 		expect(mockStripe.subscriptions.create).not.toHaveBeenCalled();
 		expect(mockStripe.subscriptions.cancel).not.toHaveBeenCalled();
 		expect(mockDb.update).not.toHaveBeenCalled();
@@ -507,7 +507,7 @@ describe("Signed BAA Stripe recovery", () => {
 		);
 		await expect(
 			purchaseSignedBaa("org-1" as never, VALID_INPUT),
-		).resolves.toEqual(failedWith("Cap Pro ended"));
+		).resolves.toEqual(failedWith("Pro ended"));
 		expect(mockStripe.subscriptions.cancel).toHaveBeenCalledWith(
 			recoveredSubscription.id,
 		);
@@ -789,7 +789,7 @@ describe("Paid BAA signing", () => {
 			},
 		);
 		await expect(signPaidBaa("org-1" as never, VALID_INPUT)).resolves.toEqual(
-			failedWith("active Cap Pro subscription"),
+			failedWith("active Pro subscription"),
 		);
 		expect(mockDb.update).not.toHaveBeenCalled();
 		expect(mockStripe.subscriptions.create).not.toHaveBeenCalled();
@@ -810,7 +810,7 @@ describe("Paid BAA signing", () => {
 			{ stripeSubscriptionId: "12345" },
 		);
 		await expect(signPaidBaa("org-1" as never, VALID_INPUT)).resolves.toEqual(
-			failedWith("active Cap Pro subscription"),
+			failedWith("active Pro subscription"),
 		);
 		expect(mockDb.update).not.toHaveBeenCalled();
 		expect(mockStripe.subscriptions.create).not.toHaveBeenCalled();

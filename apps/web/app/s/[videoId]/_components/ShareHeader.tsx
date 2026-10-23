@@ -146,7 +146,7 @@ const SIGNED_OUT_LINKS = [
 const TITLE_TEXT_CLASS =
 	"text-xl leading-7 font-normal sm:text-2xl sm:leading-8";
 
-const TITLE_PLACEHOLDER = "Cap title";
+const TITLE_PLACEHOLDER = "Video title";
 
 const ACTION_BAR_BUTTON_CLASS =
 	"h-10 min-w-0 gap-1.5 rounded-full px-3 text-[13px] sm:h-8 sm:px-2.5 sm:text-xs";
@@ -474,7 +474,7 @@ export const ShareHeader = ({
 	const copyShareLink = (url: string) =>
 		copyRichVideoLink({
 			url,
-			title: displayTitle || "Cap Recording",
+			title: displayTitle || "Recording",
 			previewImageUrl: videoPreviewImageUrl(webUrl, data.id),
 		});
 
@@ -584,7 +584,7 @@ export const ShareHeader = ({
 			className={clsx("gap-1.5 px-3", className)}
 			size="xs"
 			variant="blue"
-			aria-label="Share this Cap"
+			aria-label="Share this video"
 			onClick={openShareLinkDialog}
 			onPointerEnter={() => {
 				void importShareLinkDialog();
@@ -687,11 +687,13 @@ export const ShareHeader = ({
 
 		try {
 			await hideShareableLinkCapLogo(data.orgId);
-			toast.success("Cap logo hidden");
+			toast.success("Bizstudio Recorder logo hidden");
 			refresh();
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to hide Cap logo",
+				error instanceof Error
+					? error.message
+					: "Failed to hide Bizstudio Recorder logo",
 			);
 		} finally {
 			setIsHidingBranding(false);
@@ -733,20 +735,22 @@ export const ShareHeader = ({
 
 		return (
 			<nav
-				aria-label="Cap"
+				aria-label="Bizstudio Recorder"
 				className="flex shrink-0 flex-wrap items-center justify-end gap-x-5 gap-y-2"
 			>
-				<div className="hidden items-center gap-5 md:flex">
-					{SIGNED_OUT_LINKS.map((link) => (
-						<a
-							key={link.href}
-							href={`${link.href}?ref=video_${data.id}`}
-							className="text-[13px] text-gray-10 transition-colors hover:text-gray-12"
-						>
-							{link.label}
-						</a>
-					))}
-				</div>
+				{buildEnv.NEXT_PUBLIC_IS_CAP && (
+					<div className="hidden items-center gap-5 md:flex">
+						{SIGNED_OUT_LINKS.map((link) => (
+							<a
+								key={link.href}
+								href={`${link.href}?ref=video_${data.id}`}
+								className="text-[13px] text-gray-10 transition-colors hover:text-gray-12"
+							>
+								{link.label}
+							</a>
+						))}
+					</div>
+				)}
 				<div className="flex items-center gap-3">
 					<a
 						href="/login"
@@ -754,14 +758,16 @@ export const ShareHeader = ({
 					>
 						Log in
 					</a>
-					<Button
-						variant="dark"
-						size="xs"
-						href={`/signup?ref=video_${data.id}`}
-						className="h-8 rounded-full px-3 text-xs"
-					>
-						Get Cap free
-					</Button>
+					{buildEnv.NEXT_PUBLIC_IS_CAP && (
+						<Button
+							variant="dark"
+							size="xs"
+							href={`/signup?ref=video_${data.id}`}
+							className="h-8 rounded-full px-3 text-xs"
+						>
+							Get Cap free
+						</Button>
+					)}
 				</div>
 			</nav>
 		);
@@ -790,7 +796,7 @@ export const ShareHeader = ({
 								<Button
 									variant="gray"
 									size="xs"
-									aria-label="Hide Cap logo"
+									aria-label="Hide Bizstudio Recorder logo"
 									className="h-7 gap-1 whitespace-nowrap rounded-full px-2 text-[11px]"
 									disabled={isHidingBranding}
 									onClick={handleHideBranding}
@@ -840,7 +846,7 @@ export const ShareHeader = ({
 						size="sm"
 						variant="blue"
 					>
-						Upgrade to Cap Pro
+						Upgrade to Pro
 					</Button>
 				</div>
 			)}
@@ -884,7 +890,7 @@ export const ShareHeader = ({
 							open={moveDialogOpen}
 							onOpenChange={setMoveDialogOpen}
 							location={{ type: "personal" }}
-							rootLabel="My Caps"
+							rootLabel="My Videos"
 							organizationId={data.orgId ?? undefined}
 							item={{
 								type: "videos",
@@ -998,7 +1004,7 @@ export const ShareHeader = ({
 											maxLength={255}
 											spellCheck={false}
 											autoComplete="off"
-											aria-label="Cap title"
+											aria-label="Video title"
 											placeholder={TITLE_PLACEHOLDER}
 											onChange={(e) => setEditValue(e.target.value)}
 											onBlur={handleTitleBlur}
@@ -1144,7 +1150,7 @@ export const ShareHeader = ({
 													<Button
 														variant="dark"
 														size="xs"
-														aria-label="Manage Cap"
+														aria-label="Manage video"
 														className={clsx(ACTION_BAR_BUTTON_CLASS, "sm:px-3")}
 													>
 														<FontAwesomeIcon
@@ -1152,7 +1158,9 @@ export const ShareHeader = ({
 															icon={faEllipsis}
 														/>
 														<span className="truncate sm:hidden">Manage</span>
-														<span className="hidden sm:inline">Manage Cap</span>
+														<span className="hidden sm:inline">
+															Manage video
+														</span>
 													</Button>
 												</DropdownMenuTrigger>
 												<DropdownMenuContent
@@ -1309,7 +1317,7 @@ export const ShareHeader = ({
 															className="size-3"
 															icon={faTrash}
 														/>
-														<p className="text-sm text-inherit">Delete Cap</p>
+														<p className="text-sm text-inherit">Delete video</p>
 													</DropdownMenuItem>
 												</DropdownMenuContent>
 											</DropdownMenu>

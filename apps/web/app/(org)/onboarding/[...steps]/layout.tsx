@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@cap/database/auth/session";
+import { buildEnv } from "@cap/env";
 import { redirect } from "next/navigation";
 
 export default async function OnboardingStepLayout({
@@ -17,14 +18,17 @@ export default async function OnboardingStepLayout({
 	const steps = user.onboardingSteps || {};
 	const currentStep = (await params).steps?.[0] ?? "welcome";
 
-	const ordered = [
+	const allSteps = [
 		"welcome",
 		"organization-setup",
 		"custom-domain",
 		"invite-team",
 		"download",
 	] as const;
-	const isComplete = (s: (typeof ordered)[number]) =>
+	const ordered = buildEnv.NEXT_PUBLIC_IS_CAP
+		? allSteps
+		: allSteps.filter((s) => s === "welcome" || s === "organization-setup");
+	const isComplete = (s: (typeof allSteps)[number]) =>
 		s === "welcome"
 			? Boolean(steps.welcome && user.name)
 			: s === "organization-setup"
@@ -35,7 +39,11 @@ export default async function OnboardingStepLayout({
 						? Boolean(steps.inviteTeam)
 						: Boolean(steps.download);
 
-	const firstIncomplete = ordered.find((s) => !isComplete(s)) ?? "download";
+	const firstIncomplete =
+		ordered.find((s) => !isComplete(s)) ??
+		(buildEnv.NEXT_PUBLIC_IS_CAP ? "download" : undefined);
+
+	if (!firstIncomplete) redirect("/dashboard/caps");
 
 	if (currentStep !== firstIncomplete) {
 		redirect(`/onboarding/${firstIncomplete}`);

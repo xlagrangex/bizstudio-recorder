@@ -45,7 +45,7 @@ const options: Array<{
 	{
 		label: "Enable comments",
 		value: "disableComments",
-		description: "Allow viewers to comment on caps",
+		description: "Allow viewers to comment on videos",
 	},
 	{
 		label: "Enable summary",
@@ -67,7 +67,7 @@ const options: Array<{
 	{
 		label: "Enable reactions",
 		value: "disableReactions",
-		description: "Allow viewers to react to caps",
+		description: "Allow viewers to react to videos",
 	},
 	{
 		label: "Enable transcript",
@@ -76,9 +76,10 @@ const options: Array<{
 		pro: true,
 	},
 	{
-		label: "Show Cap logo",
+		label: "Show Bizstudio Recorder logo",
 		value: "hideShareableLinkCapLogo",
-		description: "Show Cap branding at the top of shareable links",
+		description:
+			"Show Bizstudio Recorder branding at the top of shareable links",
 		pro: true,
 	},
 ];
@@ -181,8 +182,8 @@ const CapSettingsCard = () => {
 						if (changedKey === "hideShareableLinkCapLogo") {
 							toast.success(
 								debouncedUpdateSettings[changedKey]
-									? "Cap logo hidden"
-									: "Cap logo shown",
+									? "Bizstudio Recorder logo hidden"
+									: "Bizstudio Recorder logo shown",
 							);
 						} else {
 							const isDisabled = Boolean(debouncedUpdateSettings[changedKey]);
@@ -250,10 +251,10 @@ const CapSettingsCard = () => {
 	return (
 		<Card className="flex relative flex-col flex-1 gap-6 w-full min-h-fit">
 			<CardHeader>
-				<CardTitle>Cap Settings</CardTitle>
+				<CardTitle>Video Settings</CardTitle>
 				<CardDescription>
 					Enable or disable specific settings for your organization. These
-					settings will be applied as defaults for new caps.
+					settings will be applied as defaults for new videos.
 				</CardDescription>
 			</CardHeader>
 
@@ -299,7 +300,7 @@ const CapSettingsCard = () => {
 						<p className="text-sm text-gray-12">Default playback speed</p>
 					</div>
 					<p className="text-xs text-gray-10">
-						The speed caps start playing at on shareable links. Viewers can
+						The speed videos start playing at on shareable links. Viewers can
 						still change it.
 					</p>
 				</div>

@@ -332,7 +332,7 @@ export const CapCard = ({
 	const handleCopy = (text: string) => {
 		copyRichVideoLink({
 			url: text,
-			title: cap.name || "Cap Recording",
+			title: cap.name || "Recording",
 			previewImageUrl: videoPreviewImageUrl(webUrl, cap.id),
 		});
 		setCopyPressed(true);
@@ -594,9 +594,9 @@ export const CapCard = ({
 									<DropdownMenuItem
 										onClick={() => {
 											toast.promise(duplicateMutation.mutateAsync(), {
-												loading: "Duplicating cap...",
-												success: "Cap duplicated successfully",
-												error: "Failed to duplicate cap",
+												loading: "Duplicating video...",
+												success: "Video duplicated successfully",
+												error: "Failed to duplicate video",
 											});
 										}}
 										disabled={
@@ -642,7 +642,7 @@ export const CapCard = ({
 										className="flex gap-2 items-center rounded-lg"
 									>
 										<FontAwesomeIcon className="size-3" icon={faTrash} />
-										<p className="text-sm text-gray-12">Delete Cap</p>
+										<p className="text-sm text-gray-12">Delete video</p>
 									</DropdownMenuItem>
 								</>
 							)}
@@ -652,8 +652,8 @@ export const CapCard = ({
 					<ConfirmationDialog
 						open={confirmOpen}
 						icon={<FontAwesomeIcon icon={faVideo} />}
-						title="Delete Cap"
-						description={`Are you sure you want to delete the cap "${cap.name}"? This action cannot be undone.`}
+						title="Delete video"
+						description={`Are you sure you want to delete the video "${cap.name}"? This action cannot be undone.`}
 						confirmLabel={deleteMutation.isPending ? "Deleting..." : "Delete"}
 						cancelLabel="Cancel"
 						loading={deleteMutation.isPending}
@@ -665,7 +665,7 @@ export const CapCard = ({
 				{!sharedCapCard && onSelectToggle && (
 					<button
 						type="button"
-						aria-label={isSelected ? "Deselect cap" : "Select cap"}
+						aria-label={isSelected ? "Deselect video" : "Select video"}
 						className={clsx(
 							"absolute top-2 left-2 z-[49] duration-200",
 							isSelected || anyCapSelected || isDropdownOpen

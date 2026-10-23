@@ -157,7 +157,7 @@ const settingOptions: {
 	{
 		label: "Enable comments",
 		value: "disableComments",
-		description: "Allow viewers to comment on caps in this space",
+		description: "Allow viewers to comment on videos in this space",
 	},
 	{
 		label: "Enable summary",
@@ -179,7 +179,7 @@ const settingOptions: {
 	{
 		label: "Enable reactions",
 		value: "disableReactions",
-		description: "Allow viewers to react to caps in this space",
+		description: "Allow viewers to react to videos in this space",
 	},
 	{
 		label: "Enable transcript",
@@ -491,7 +491,7 @@ export const NewSpaceForm: React.FC<NewSpaceFormProps> = (props) => {
 												Require password
 											</p>
 											<p className="text-xs text-gray-10">
-												Protect every cap in this space
+												Protect every video in this space
 											</p>
 										</div>
 									</div>
@@ -527,7 +527,7 @@ export const NewSpaceForm: React.FC<NewSpaceFormProps> = (props) => {
 					<section className="space-y-3">
 						<SectionLabel
 							title="Viewer permissions"
-							description="These apply to every cap shared in this space."
+							description="These apply to every video shared in this space."
 						/>
 						<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
 							{settingOptions.map((option) => {

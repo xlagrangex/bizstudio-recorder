@@ -64,7 +64,7 @@ export const PublicCollectionField = ({
 							)}
 						</div>
 						<p className="text-xs text-gray-10">
-							Anyone with the link can browse public caps in this {kind}.
+							Anyone with the link can browse public videos in this {kind}.
 						</p>
 					</div>
 				</div>

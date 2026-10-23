@@ -50,12 +50,12 @@ export const EmptySharedCapState: React.FC<EmptySharedCapStateProps> = ({
 				<p className="mb-3 text-xl font-semibold text-gray-12">
 					{type === "space"
 						? "Start sharing videos to this Space"
-						: "No shared Caps yet!"}
+						: "No shared videos yet!"}
 				</p>
 				<p className="mb-6 max-w-md text-md text-gray-10">
 					{type === "space"
-						? "Add videos directly here in this Space, or add videos from the My Caps page."
-						: `There are no Caps shared with ${organizationName} yet. Ask your team members to share their Caps with this ${type}.`}
+						? "Add videos directly here in this Space, or add videos from the My Videos page."
+						: `There are no videos shared with ${organizationName} yet. Ask your team members to share their videos with this ${type}.`}
 				</p>
 				{showAddButton && (
 					<Button

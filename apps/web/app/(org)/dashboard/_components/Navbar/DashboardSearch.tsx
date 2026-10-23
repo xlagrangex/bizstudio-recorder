@@ -155,7 +155,7 @@ export function DashboardSearch({
 		() => [
 			{
 				id: "my-caps",
-				title: "My Caps",
+				title: "My Videos",
 				subtitle: "Open your video library",
 				href: "/dashboard/caps",
 				value: "my caps videos recordings library",
@@ -163,7 +163,7 @@ export function DashboardSearch({
 			},
 			{
 				id: "record-cap",
-				title: "Record a Cap",
+				title: "Record a Video",
 				subtitle: "Start a new browser recording",
 				href: "/dashboard/caps/record",
 				value: "record cap screen video browser recorder",
@@ -172,7 +172,7 @@ export function DashboardSearch({
 			{
 				id: "import-video",
 				title: "Import Media",
-				subtitle: "Bring an existing video or image into Cap",
+				subtitle: "Bring an existing video or image into Bizstudio Recorder",
 				href: loomImportPageHref(loomImportDestinationFromPathname(pathname)),
 				value: "import upload loom video image media file",
 				icon: Upload,
@@ -243,7 +243,7 @@ export function DashboardSearch({
 						},
 						{
 							id: "organization-preferences",
-							title: "Cap Settings",
+							title: "Video Settings",
 							subtitle: "Default summaries, captions, and viewer options",
 							href: "/dashboard/settings/organization/preferences",
 							value:
@@ -369,7 +369,7 @@ export function DashboardSearch({
 			>
 				<Search className="flex-shrink-0 size-4 transition-colors text-gray-10 group-hover:text-gray-11" />
 				<span className="flex-1 text-[13px] text-left truncate text-gray-10">
-					Search caps, spaces, settings…
+					Search videos, spaces, settings…
 				</span>
 				<kbd className="hidden items-center px-1.5 h-5 text-[11px] font-medium rounded-md border select-none sm:inline-flex text-gray-10 border-gray-4 bg-gray-1">
 					{shortcutKey}
@@ -386,7 +386,7 @@ export function DashboardSearch({
 							ref={inputRef}
 							value={query}
 							onValueChange={updateQuery}
-							placeholder="Search caps, spaces, settings…"
+							placeholder="Search videos, spaces, settings…"
 							className="h-[52px] text-[15px] pr-12 outline-none"
 						/>
 						<CommandList className="overflow-y-auto px-2 pt-1 pb-2 h-[min(60vh,440px)] max-h-[min(60vh,440px)]">

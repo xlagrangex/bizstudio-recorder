@@ -167,7 +167,7 @@ export const Caps = ({
 			const message =
 				error instanceof Error
 					? error.message
-					: "An error occurred while deleting caps";
+					: "An error occurred while deleting videos";
 			toast.error(message);
 		},
 	});
@@ -177,10 +177,10 @@ export const Caps = ({
 			yield* rpc.VideoDelete(id);
 		}),
 		onSuccess: () => {
-			toast.success("Cap deleted successfully");
+			toast.success("Video deleted successfully");
 			router.refresh();
 		},
-		onError: (_error: unknown) => toast.error("Failed to delete cap"),
+		onError: (_error: unknown) => toast.error("Failed to delete video"),
 	});
 
 	useEffect(() => {
@@ -276,7 +276,7 @@ export const Caps = ({
 				scope="personal"
 				folders={folders}
 				canMove
-				moveRootLabel="My Caps"
+				moveRootLabel="My Videos"
 			/>
 			{visibleVideos.length > 0 && (
 				<>
@@ -311,7 +311,7 @@ export const Caps = ({
 									onSelectToggle={() => handleCapSelection(video.id)}
 									canMove
 									moveLocation={moveLocation}
-									moveRootLabel="My Caps"
+									moveRootLabel="My Videos"
 								/>
 							);
 						})}
@@ -329,7 +329,7 @@ export const Caps = ({
 				deleteSelectedCaps={() => deleteCaps(selectedCaps)}
 				isDeleting={isDeletingCaps || isDeletingCap}
 				moveLocation={moveLocation}
-				moveRootLabel="My Caps"
+				moveRootLabel="My Videos"
 			/>
 			{isDraggingCap && (
 				<div className="fixed inset-0 z-50 pointer-events-none">

@@ -15,7 +15,10 @@ const summary = document.getElementById("summary");
 const cues = document.getElementById("cues");
 const status = document.getElementById("status");
 const open = document.getElementById("open");
-const app = new App({ name: "Cap recording card", version: "1.0.0" });
+const app = new App({
+	name: "Bizstudio Recorder recording card",
+	version: "1.0.0",
+});
 
 const safeUrl = (value: string) => {
 	try {
@@ -57,7 +60,8 @@ const render = (data: Card) => {
 	if (data.hasMoreCues) {
 		const more = document.createElement("p");
 		more.className = "more";
-		more.textContent = "More transcript moments are available in Cap.";
+		more.textContent =
+			"More transcript moments are available in Bizstudio Recorder.";
 		cues.append(more);
 	}
 	const shareUrl = safeUrl(data.url);

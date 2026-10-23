@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@cap/database/auth/session";
+import { buildEnv } from "@cap/env";
 import { Card, CardDescription, CardHeader, CardTitle } from "@cap/ui";
 import type { Metadata } from "next";
 import { redirect, unstable_rethrow } from "next/navigation";
@@ -7,7 +8,7 @@ import { ComplianceCard } from "../components/ComplianceCard";
 import { SsoCard } from "../components/SsoCard";
 
 export const metadata: Metadata = {
-	title: "Security & Compliance — Cap",
+	title: "Security & Compliance — Bizstudio Recorder",
 };
 
 export default async function OrganizationSecurityPage({
@@ -20,6 +21,8 @@ export default async function OrganizationSecurityPage({
 }) {
 	const [user, query] = await Promise.all([getCurrentUser(), searchParams]);
 	if (!user) redirect("/auth/signin");
+	if (!buildEnv.NEXT_PUBLIC_IS_CAP)
+		redirect("/dashboard/settings/organization");
 	if (!user.activeOrganizationId) redirect("/dashboard/caps");
 	if (
 		(query.sso_checkout || query.organizationId) &&

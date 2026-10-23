@@ -276,7 +276,7 @@ app.get(
 
 			const videoName =
 				name ??
-				`Cap ${isScreenshot ? "Screenshot" : "Recording"} - ${formattedDate}`;
+				`${isScreenshot ? "Screenshot" : "Recording"} - ${formattedDate}`;
 			const metadata: VideoMetadata | undefined = name
 				? { sourceName: name }
 				: undefined;
@@ -368,7 +368,7 @@ app.get(
 
 					await sendEmail({
 						email: user.email,
-						subject: "You created your first Cap! 🥳",
+						subject: "You created your first video! 🥳",
 						react: FirstShareableLink({
 							email: user.email,
 							url: videoUrl,

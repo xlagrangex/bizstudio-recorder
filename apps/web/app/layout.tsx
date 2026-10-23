@@ -43,32 +43,29 @@ const defaultFont = localFont({
 });
 
 export const metadata: Metadata = {
-	metadataBase: new URL("https://cap.so"),
-	title: "Cap — Beautiful screen recordings, owned by you.",
-	description:
-		"Cap is the open source alternative to Loom. Lightweight, powerful, and cross-platform. Record and share in seconds.",
+	metadataBase: new URL("https://rec.bizstudio.it"),
+	title: "Bizstudio Recorder",
+	description: "Registra lo schermo e condividi il video con un link.",
 	openGraph: {
-		title: "Cap — Beautiful screen recordings, owned by you.",
-		description:
-			"Cap is the open source alternative to Loom. Lightweight, powerful, and cross-platform. Record and share in seconds.",
+		title: "Bizstudio Recorder",
+		description: "Registra lo schermo e condividi il video con un link.",
 		type: "website",
-		url: "https://cap.so",
-		siteName: "Cap",
+		url: "https://rec.bizstudio.it",
+		siteName: "Bizstudio Recorder",
 		images: [
 			{
-				url: "/api/og",
-				width: 1200,
-				height: 630,
-				alt: "Cap — Beautiful screen recordings, owned by you.",
+				url: "/og.png",
+				width: 1246,
+				height: 654,
+				alt: "Bizstudio Recorder",
 			},
 		],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Cap — Beautiful screen recordings, owned by you.",
-		description:
-			"Cap is the open source alternative to Loom. Lightweight, powerful, and cross-platform. Record and share in seconds.",
-		images: ["/api/og"],
+		title: "Bizstudio Recorder",
+		description: "Registra lo schermo e condividi il video con un link.",
+		images: ["/og.png"],
 	},
 };
 

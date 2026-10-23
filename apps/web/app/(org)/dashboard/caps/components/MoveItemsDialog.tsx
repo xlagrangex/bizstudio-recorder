@@ -160,7 +160,7 @@ export function MoveItemsDialog({
 			toast.success(
 				item.type === "folder"
 					? "Folder moved"
-					: `${count} Cap${count === 1 ? "" : "s"} ${sameLocation ? "moved" : `added to ${selectedGroup?.name}`}`,
+					: `${count} video${count === 1 ? "" : "s"} ${sameLocation ? "moved" : `added to ${selectedGroup?.name}`}`,
 			);
 			onMoved?.();
 			if (item.type === "folder") {
@@ -180,7 +180,7 @@ export function MoveItemsDialog({
 	const title =
 		item.type === "folder"
 			? "Move folder"
-			: `Move ${itemCount} Cap${itemCount === 1 ? "" : "s"}`;
+			: `Move ${itemCount} video${itemCount === 1 ? "" : "s"}`;
 	const destinationChanged =
 		!sameLocation || selectedFolderId !== currentDestinationId;
 	const sharing = !sameLocation && selectedGroup?.location.type !== "personal";
@@ -228,8 +228,8 @@ export function MoveItemsDialog({
 					{sharing && (
 						<p className="text-sm text-gray-11">
 							People with access to {selectedGroup?.name} will be able to view
-							these Caps. Existing sharing and their location in My Caps will be
-							kept.
+							these videos. Existing sharing and their location in My Videos
+							will be kept.
 						</p>
 					)}
 					<div className="relative shrink-0">

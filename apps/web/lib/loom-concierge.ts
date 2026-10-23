@@ -110,11 +110,11 @@ export async function requireProCustomerMigrationAccess(
 	const user = await requireCustomerMigrationAccess(organizationId);
 	if (!buildEnv.NEXT_PUBLIC_IS_CAP) {
 		throw new LoomMigrationError(
-			"Concierge migration is available on Cap Cloud.",
+			"Concierge migration is not available on this instance.",
 		);
 	}
 	if (!(await isOrganizationOwnerPro(organizationId))) {
-		throw new LoomMigrationError("Concierge Loom migration requires Cap Pro.");
+		throw new LoomMigrationError("Concierge Loom migration requires Pro.");
 	}
 	return user;
 }

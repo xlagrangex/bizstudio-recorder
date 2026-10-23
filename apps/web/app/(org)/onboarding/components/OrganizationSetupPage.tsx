@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import { Button, Input } from "@cap/ui";
 import { faImage } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -9,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { startTransition, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useEffectMutation, useRpcClient } from "@/lib/EffectRuntime";
+import { consumeOnboardingNextPath } from "../../onboarding-next";
 import { Base } from "./Base";
 
 export function OrganizationSetupPage({
@@ -62,7 +64,11 @@ export function OrganizationSetupPage({
 			}),
 		onSuccess: () => {
 			startTransition(() => {
-				router.push("/onboarding/custom-domain");
+				router.push(
+					buildEnv.NEXT_PUBLIC_IS_CAP
+						? "/onboarding/custom-domain"
+						: consumeOnboardingNextPath("/dashboard/caps"),
+				);
 				router.refresh();
 			});
 		},

@@ -87,7 +87,7 @@ export function InviteTeamPage() {
 			}
 			const data = await response.json();
 			if (data.subscription === true) {
-				toast.success("You are already on the Cap Pro plan");
+				toast.success("You are already on the Pro plan");
 				return;
 			}
 
@@ -114,7 +114,7 @@ export function InviteTeamPage() {
 		<Base
 			title="Invite your team"
 			descriptionClassName="max-w-[360px]"
-			description="Invite members of your team to join your organization and share Caps together"
+			description="Invite members of your team to join your organization and share videos together"
 		>
 			<div className="text-center">
 				<span className="mr-2 text-2xl tabular-nums lg:text-3xl text-gray-12">

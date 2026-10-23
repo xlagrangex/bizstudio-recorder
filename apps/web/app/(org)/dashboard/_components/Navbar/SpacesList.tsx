@@ -117,11 +117,11 @@ const SpacesList = ({ toggleMobileNav }: { toggleMobileNav?: () => void }) => {
 				toast.success(`Shared "${cap.name}" to ${space?.name || "space"}`);
 				router.refresh();
 			} else {
-				toast.error(result.error || "Failed to share cap");
+				toast.error(result.error || "Failed to share video");
 			}
 		} catch (error) {
 			console.error("Error sharing cap:", error);
-			toast.error("Failed to share cap");
+			toast.error("Failed to share video");
 		}
 	};
 

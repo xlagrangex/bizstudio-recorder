@@ -40,7 +40,7 @@ const options: {
 	{
 		label: "Enable comments",
 		value: "disableComments",
-		description: "Allow viewers to comment on this cap",
+		description: "Allow viewers to comment on this video",
 	},
 	{
 		label: "Enable summary",
@@ -51,7 +51,7 @@ const options: {
 	{
 		label: "Enable captions",
 		value: "disableCaptions",
-		description: "Allow viewers to use captions for this cap",
+		description: "Allow viewers to use captions for this video",
 	},
 	{
 		label: "Enable chapters",
@@ -62,7 +62,7 @@ const options: {
 	{
 		label: "Enable reactions",
 		value: "disableReactions",
-		description: "Allow viewers to react to this cap",
+		description: "Allow viewers to react to this video",
 	},
 	{
 		label: "Enable transcript",
@@ -185,7 +185,7 @@ export const SettingsDialog = ({
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className="max-w-md min-w-fit">
 				<DialogHeader
-					description="Manage the settings for this cap"
+					description="Manage the settings for this video"
 					icon={<FontAwesomeIcon icon={faGear} className="size-3.5" />}
 				>
 					<DialogTitle>Settings</DialogTitle>
@@ -249,7 +249,7 @@ export const SettingsDialog = ({
 								)}
 							</div>
 							<p className="text-xs text-gray-10">
-								The speed this cap starts playing at. Viewers can still change
+								The speed this video starts playing at. Viewers can still change
 								it.
 							</p>
 						</div>

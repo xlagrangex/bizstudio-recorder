@@ -27,9 +27,7 @@ export function LoomMigrationRequestEmail({
 			<Body className="bg-white font-sans">
 				<Container className="mx-auto my-10 max-w-[500px] px-6">
 					<Heading>New Loom migration request</Heading>
-					<Text>
-						{organizationName} requested a Cap Pro concierge migration.
-					</Text>
+					<Text>{organizationName} requested a Pro concierge migration.</Text>
 					<Text>Requested by: {requesterEmail}</Text>
 					{workspaceName && <Text>Loom workspace: {workspaceName}</Text>}
 					<Link href={queueUrl}>Open the migration queue</Link>

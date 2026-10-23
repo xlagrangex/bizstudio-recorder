@@ -78,7 +78,7 @@ describe("Slack video unfurls", () => {
 			title_url: "https://cap.so/s/abc123",
 			video_url: "https://cap.so/embed/abc123?autoplay=true&slack=true",
 			thumbnail_url: "https://cap.so/api/video/og?videoId=abc123",
-			provider_name: "Cap",
+			provider_name: "Bizstudio Recorder",
 			author_name: "Richie",
 		});
 	});

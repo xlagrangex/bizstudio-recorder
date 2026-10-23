@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import { Button } from "@cap/ui";
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -49,19 +50,23 @@ export const RecordVideoPage = () => {
 					<div className="mx-auto w-full max-w-[560px] min-w-0">
 						<div className="flex flex-col items-center">
 							<p className="max-w-md text-gray-10 text-md">
-								Choose how you'd like to record your Cap
+								Choose how you'd like to record your video
 							</p>
 						</div>
 						<div className="flex flex-wrap gap-3 justify-center items-center mt-4">
-							<Button
-								onClick={openDesktop}
-								className="flex relative gap-2 justify-center items-center"
-								variant="primary"
-							>
-								<FontAwesomeIcon className="size-3.5" icon={faDownload} />
-								Open Cap Desktop
-							</Button>
-							<p className="text-sm text-gray-10">or</p>
+							{buildEnv.NEXT_PUBLIC_IS_CAP && (
+								<>
+									<Button
+										onClick={openDesktop}
+										className="flex relative gap-2 justify-center items-center"
+										variant="primary"
+									>
+										<FontAwesomeIcon className="size-3.5" icon={faDownload} />
+										Open Desktop App
+									</Button>
+									<p className="text-sm text-gray-10">or</p>
+								</>
+							)}
 							<WebRecorderDialog />
 							<ChromeRecorderButton
 								size="sm"
@@ -81,8 +86,8 @@ const FaqAccordion = () => {
 	const items = [
 		{
 			id: "what-is-cap",
-			q: "What is a Cap?",
-			a: "A Cap is a quick video recording of your screen, camera, or both that you can share instantly with a link.",
+			q: "What is a video recording here?",
+			a: "A recording is a quick video of your screen, camera, or both that you can share instantly with a link.",
 		},
 		{
 			id: "how-it-works",
@@ -97,7 +102,7 @@ const FaqAccordion = () => {
 		{
 			id: "pip",
 			q: "How do I keep my webcam visible?",
-			a: "On compatible browsers, selecting a camera opens a picture‑in‑picture window that’s captured when you record fullscreen. We recommend recording fullscreen to keep it on top. If PiP capture isn’t supported, your camera stays within the Cap recorder tab.",
+			a: "On compatible browsers, selecting a camera opens a picture‑in‑picture window that’s captured when you record fullscreen. We recommend recording fullscreen to keep it on top. If PiP capture isn’t supported, your camera stays within the recorder tab.",
 		},
 		{
 			id: "what-can-i-record",
@@ -107,12 +112,12 @@ const FaqAccordion = () => {
 		{
 			id: "system-audio",
 			q: "Can I record system audio?",
-			a: "Browsers limit system‑wide audio capture. We recommend using Cap Desktop for best results.",
+			a: "Browsers limit system‑wide audio capture. We recommend using the desktop app for best results.",
 		},
 		{
 			id: "install",
 			q: "Do I need to install the app?",
-			a: `No. You can record in your browser. For longer recordings, system audio, and advanced editing, use Cap Desktop. The Free plan supports up to ${freeMinutes} minutes per recording in the browser.`,
+			a: `No. You can record in your browser. For longer recordings, system audio, and advanced editing, use the desktop app. The Free plan supports up to ${freeMinutes} minutes per recording in the browser.`,
 		},
 	];
 

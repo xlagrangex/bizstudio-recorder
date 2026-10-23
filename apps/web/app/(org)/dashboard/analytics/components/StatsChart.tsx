@@ -114,7 +114,7 @@ export default function StatsBox({
 							<StatBox
 								onClick={() => toggleHandler("caps")}
 								isSelected={selectedBoxes.has("caps")}
-								title="Caps"
+								title="Videos"
 								value={formattedCounts.caps}
 								metric="caps"
 								onMouseEnter={() => capsBoxRef.current?.startAnimation()}

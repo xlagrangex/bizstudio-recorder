@@ -3,7 +3,7 @@ import CapSettingsCard from "../components/CapSettingsCard";
 import { DefaultVideoVisibility } from "../components/DefaultVideoVisibility";
 
 export const metadata: Metadata = {
-	title: "Organization Preferences — Cap",
+	title: "Organization Preferences — Bizstudio Recorder",
 };
 
 export default function PreferencesPage() {

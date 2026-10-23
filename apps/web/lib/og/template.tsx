@@ -154,74 +154,92 @@ export const MeshFrame = ({
 	</div>
 );
 
-// Exact mark geometry from packages/ui LogoBadge/Logo (viewBox 0 0 40 40):
-// concentric circles at (20,20), r 16 / 13 / 10. Returned as an array —
-// satori drops React fragments nested inside <svg>.
-const logoMark = () => [
-	<circle key="o" cx="20" cy="20" r="16" fill={OG_BLUE} />,
-	<circle key="m" cx="20" cy="20" r="13" fill={OG_BLUE_LIGHT} />,
-	<circle key="i" cx="20" cy="20" r="10" fill="white" />,
-];
+const Mascot = ({ src, size }: { src: string; size: number }) => (
+	<div
+		style={{
+			display: "flex",
+			width: size,
+			height: size,
+			backgroundImage: `url(${src})`,
+			backgroundSize: `${size}px ${size}px`,
+		}}
+	/>
+);
 
-// The drawn "Cap" wordmark path from packages/ui Logo.tsx (viewBox 0 0 120 40).
-const WORDMARK_PATH =
-	"M58.416 30.448c-5.404 0-9.212-3.864-9.212-10.36 0-6.384 3.668-10.416 9.268-10.416 5.068 0 7.784 2.66 8.624 7.168l-3.808.196c-.476-2.604-2.072-4.2-4.816-4.2-3.388 0-5.488 2.828-5.488 7.252 0 4.48 2.156 7.196 5.46 7.196 2.94 0 4.508-1.708 4.956-4.564l3.808.196c-.784 4.676-3.752 7.532-8.792 7.532zm16.23-.112c-3.137 0-5.209-1.484-5.209-4.088 0-2.576 1.596-3.948 4.872-4.592l4.956-.98c0-2.1-.98-3.192-2.856-3.192-1.764 0-2.716.812-3.052 2.324l-3.668-.168c.588-3.136 2.996-4.928 6.72-4.928 4.256 0 6.44 2.24 6.44 6.216v5.432c0 .812.28 1.036.84 1.036h.476V30c-.224.056-.812.112-1.288.112-1.624 0-2.828-.588-3.136-2.436-.728 1.596-2.632 2.66-5.096 2.66zm.727-2.604c2.38 0 3.892-1.512 3.892-3.78v-.84l-3.864.784c-1.596.308-2.24.98-2.24 2.016 0 1.176.784 1.82 2.212 1.82zM86.874 34.2V15.048h3.444l.056 2.212c.868-1.652 2.52-2.548 4.48-2.548 4.256 0 6.356 3.5 6.356 7.812s-2.128 7.812-6.384 7.812c-1.904 0-3.556-.924-4.368-2.38V34.2h-3.584zm7.112-6.776c2.184 0 3.5-1.82 3.5-4.9s-1.316-4.9-3.5-4.9-3.528 1.652-3.528 4.9 1.316 4.9 3.528 4.9z";
-
-export const CapAppIcon = ({ size }: { size: number }) => (
+export const CapAppIcon = ({
+	size,
+	mascot,
+}: {
+	size: number;
+	mascot: string;
+}) => (
 	<div
 		style={flex({
 			width: size,
 			height: size,
 			borderRadius: Math.round(size * 0.2),
 			boxShadow: "0 4px 14px rgba(23,58,128,0.18)",
+			backgroundColor: "white",
+			alignItems: "center",
+			justifyContent: "center",
 		})}
 	>
-		<svg
-			role="img"
-			aria-label="Cap"
-			width={size}
-			height={size}
-			viewBox="0 0 40 40"
-		>
-			<rect width="40" height="40" rx="8" fill="white" />
-			{logoMark()}
-		</svg>
+		<Mascot src={mascot} size={Math.round(size * 0.8)} />
 	</div>
 );
 
 export const CapWordmark = ({
+	mascot,
 	height = 52,
 	color = OG_INK,
 }: {
+	mascot: string;
 	height?: number;
 	color?: string;
 }) => (
-	<div style={flex({ alignItems: "center", gap: Math.round(height * 0.28) })}>
-		<CapAppIcon size={height} />
-		<svg
-			role="img"
-			aria-label="Cap"
-			width={Math.round((height * 58) / 40)}
-			height={height}
-			viewBox="46 0 58 40"
+	<div
+		style={flex({
+			alignItems: "center",
+			gap: Math.round(height * 0.2),
+			height,
+		})}
+	>
+		<Mascot src={mascot} size={height} />
+		<span
+			style={{
+				fontSize: Math.round(height * 0.62),
+				fontWeight: 500,
+				letterSpacing: -height * 0.015,
+				color,
+			}}
 		>
-			<path fill={color} d={WORDMARK_PATH} />
-		</svg>
+			Bizstudio Recorder
+		</span>
 	</div>
 );
 
-/** The in-app logo — bare mark + wordmark, as the main window renders it. */
-const CapFullLogo = ({ height, color }: { height: number; color: string }) => (
-	<svg
-		role="img"
-		aria-label="Cap"
-		width={Math.round((height * 104) / 40)}
-		height={height}
-		viewBox="0 0 104 40"
-	>
-		{logoMark()}
-		<path fill={color} d={WORDMARK_PATH} />
-	</svg>
+/** The in-app logo — mascot + wordmark, as the main window renders it. */
+const CapFullLogo = ({
+	height,
+	color,
+	mascot,
+}: {
+	height: number;
+	color: string;
+	mascot: string;
+}) => (
+	<div style={flex({ alignItems: "center", gap: 6, height })}>
+		<Mascot src={mascot} size={height} />
+		<span
+			style={{
+				fontSize: Math.round(height * 0.6),
+				fontWeight: 500,
+				color,
+			}}
+		>
+			Recorder
+		</span>
+	</div>
 );
 
 const Stroke = {
@@ -697,7 +715,13 @@ const DeviceRow = ({
 );
 
 /** Miniature of the actual Cap main window (new-main, light mode). */
-export const RecorderCard = ({ width = 380 }: { width?: number }) => (
+export const RecorderCard = ({
+	mascot,
+	width = 380,
+}: {
+	mascot: string;
+	width?: number;
+}) => (
 	<div
 		style={flex({
 			width,
@@ -722,7 +746,7 @@ export const RecorderCard = ({ width = 380 }: { width?: number }) => (
 		</div>
 		{/* logo row + mode switcher */}
 		<div style={flex({ alignItems: "center", marginTop: 4 })}>
-			<CapFullLogo height={30} color="#12161F" />
+			<CapFullLogo height={30} color="#12161F" mascot={mascot} />
 			<div
 				style={flex({
 					marginLeft: 8,
@@ -827,7 +851,7 @@ const MenuBar = () => (
 		})}
 	>
 		<AppleGlyph size={15} />
-		<span style={{ fontWeight: 600 }}>Cap</span>
+		<span style={{ fontWeight: 600 }}>Bizstudio Recorder</span>
 		<span style={{ fontWeight: 400 }}>File</span>
 		<span style={{ fontWeight: 400 }}>Edit</span>
 		<span style={{ fontWeight: 400 }}>View</span>
@@ -838,9 +862,11 @@ const MenuBar = () => (
 export const DesktopArt = ({
 	mesh,
 	wallpaper,
+	mascot,
 }: {
 	mesh: string;
 	wallpaper: string;
+	mascot: string;
 }) => (
 	<MeshFrame mesh={mesh} width={640} height={580}>
 		<div
@@ -873,7 +899,7 @@ export const DesktopArt = ({
 					top: 64,
 				})}
 			>
-				<RecorderCard width={380} />
+				<RecorderCard width={380} mascot={mascot} />
 			</div>
 		</div>
 	</MeshFrame>
@@ -1008,7 +1034,7 @@ export const PricingArt = ({
 	<MeshFrame mesh={mesh} width={500} height={620} padding={10} radius={30}>
 		<PlanCardArt
 			width={480}
-			name="Cap Pro"
+			name="Pro"
 			chip="Most popular"
 			chipBg="#DCEBFC"
 			chipColor="#2F62D4"
@@ -1058,7 +1084,7 @@ export const PricingArt = ({
 					boxShadow: "0 10px 24px -10px rgba(120,178,240,0.55)",
 				})}
 			>
-				Get Cap Pro
+				Get Pro
 			</div>
 		</PlanCardArt>
 	</MeshFrame>

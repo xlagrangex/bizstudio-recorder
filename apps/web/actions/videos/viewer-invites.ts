@@ -89,7 +89,7 @@ export async function inviteVideoViewer(videoId: Video.VideoId, email: string) {
 	try {
 		const result = await sendEmail({
 			email: normalizedEmail,
-			subject: `Invitation to watch ${video.name} on Cap`,
+			subject: `Invitation to watch ${video.name} on Bizstudio Recorder`,
 			react: VideoViewerInvite({
 				email: normalizedEmail,
 				videoName: video.name,

@@ -28,7 +28,7 @@ import {
 const profileOptions = [
 	{
 		value: "creator",
-		label: "Creator: caps, uploads, library, analytics, notifications",
+		label: "Creator: videos, uploads, library, analytics, notifications",
 	},
 	{
 		value: "admin",
@@ -111,9 +111,9 @@ export const CliApiKeys = ({
 		<Card className="flex flex-col gap-4 mt-6">
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 				<div className="space-y-1">
-					<CardTitle>Cap CLI access</CardTitle>
+					<CardTitle>CLI access</CardTitle>
 					<CardDescription>
-						API keys authenticate the Cap CLI in environments without a browser,
+						API keys authenticate the CLI in environments without a browser,
 						such as CI runners and remote sandboxes. Keys created by{" "}
 						<code>cap auth login</code> also appear here.
 					</CardDescription>
@@ -253,7 +253,7 @@ export const CliApiKeys = ({
 				<DialogContent>
 					<DialogHeader
 						icon={<KeyRound className="size-4" />}
-						description="Cap stores only a hash of this key, so it cannot be shown again."
+						description="Only a hash of this key, so it cannot be shown again."
 					>
 						<DialogTitle>Copy your API key</DialogTitle>
 					</DialogHeader>
@@ -263,7 +263,7 @@ export const CliApiKeys = ({
 						)}
 						<p className="text-sm text-gray-11">
 							Set it as <code>CAP_API_KEY</code> (or{" "}
-							<code>CAP_AGENT_TOKEN</code>) in the environment where the Cap CLI
+							<code>CAP_AGENT_TOKEN</code>) in the environment where the CLI
 							runs, then verify with <code>cap auth status --json</code>.
 						</p>
 					</div>

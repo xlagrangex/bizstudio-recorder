@@ -383,7 +383,7 @@ async function toSignedBaaResult(
 		return {
 			success: false,
 			error:
-				"We couldn't complete your Signed BAA. Please try again or contact hello@cap.so.",
+				"We couldn't complete your Signed BAA. Please try again or contact support.",
 		};
 	}
 }
@@ -458,7 +458,7 @@ async function completeSignedBaa(
 			!ownerCanPurchaseSignedBaa(user)
 		) {
 			throw new SignedBaaError(
-				"Your organization needs an active Cap Pro subscription before adding the Signed BAA add-on.",
+				"Your organization needs an active Pro subscription before adding the Signed BAA add-on.",
 			);
 		}
 
@@ -469,7 +469,7 @@ async function completeSignedBaa(
 			);
 		} catch {
 			throw new SignedBaaError(
-				"Your organization needs an active Cap Pro subscription before adding the Signed BAA add-on.",
+				"Your organization needs an active Pro subscription before adding the Signed BAA add-on.",
 			);
 		}
 		if (
@@ -477,7 +477,7 @@ async function completeSignedBaa(
 			!isProSubscription(liveProSubscription)
 		) {
 			throw new SignedBaaError(
-				"Your organization needs an active Cap Pro subscription before adding the Signed BAA add-on.",
+				"Your organization needs an active Pro subscription before adding the Signed BAA add-on.",
 			);
 		}
 	}
@@ -691,7 +691,7 @@ async function completeSignedBaa(
 	}
 	if (!(await ensureBaaHasPro(user, subscription, recordIdentity))) {
 		throw new SignedBaaError(
-			"Cap Pro ended before the BAA could be signed. The BAA subscription has been canceled; please contact support about your payment.",
+			"Pro ended before the BAA could be signed. The BAA subscription has been canceled; please contact support about your payment.",
 		);
 	}
 
@@ -728,7 +728,7 @@ async function completeSignedBaa(
 						? [details.noticesEmail]
 						: []),
 				],
-				subject: "Your signed BAA with Cap",
+				subject: "Your signed BAA",
 				react: SignedBaa({
 					email: user.email,
 					entityName: details.entityName,

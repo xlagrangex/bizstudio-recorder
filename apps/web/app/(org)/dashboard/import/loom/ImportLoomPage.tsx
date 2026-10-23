@@ -253,7 +253,7 @@ export const ImportLoomPage = ({
 		spaceId,
 	};
 	const rootLabel = !spaceId
-		? "My Caps"
+		? "My Videos"
 		: spaceId === orgId
 			? (activeOrganization?.organization.name ?? "Organization")
 			: (spacesData?.find((space) => space.id === spaceId)?.name ?? "Space");
@@ -552,8 +552,8 @@ export const ImportLoomPage = ({
 						</h1>
 						<p className="mt-1 max-w-xl text-sm text-gray-10">
 							{canUseCsvImport
-								? "Bring a single Loom video into Cap, or bulk import recordings for organization members and new users from a CSV."
-								: "Paste a Loom share link to bring it into Cap."}
+								? "Bring a single Loom video into Bizstudio Recorder, or bulk import recordings for organization members and new users from a CSV."
+								: "Paste a Loom share link to bring it into Bizstudio Recorder."}
 						</p>
 					</div>
 				</div>
@@ -667,7 +667,7 @@ export const ImportLoomPage = ({
 										</Button>
 										{spaceId && (
 											<Link href="/dashboard/import/loom" className="underline">
-												Import to My Caps instead
+												Import to My Videos instead
 											</Link>
 										)}
 									</div>
@@ -909,11 +909,8 @@ export const ImportLoomPage = ({
 													videos at a time.
 												</p>
 												<p className="mt-1 text-red-10">
-													Split this file into smaller batches or{" "}
-													<a className="underline" href="mailto:hello@cap.so">
-														contact support
-													</a>{" "}
-													to raise the limit.
+													Split this file into smaller batches or contact your
+													administrator to raise the limit.
 												</p>
 											</div>
 										</div>

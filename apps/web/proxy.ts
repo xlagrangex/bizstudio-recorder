@@ -84,9 +84,6 @@ export async function proxy(request: NextRequest) {
 				path.startsWith("/login") ||
 				path.startsWith("/signup") ||
 				path.startsWith("/invite") ||
-				path.startsWith("/self-hosting") ||
-				path.startsWith("/download") ||
-				path.startsWith("/terms") ||
 				path.startsWith("/verify-otp") ||
 				path.startsWith("/embed/") ||
 				path.startsWith("/.well-known/workflow/") ||

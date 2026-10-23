@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import clsx from "clsx";
@@ -29,31 +30,30 @@ export default function Stepper({
 
 	const steps = [
 		{
-			id: "1",
 			name: "Welcome",
 			completed: completedSteps.welcome || false,
 		},
 		{
-			id: "2",
 			name: "Organization Setup",
 			completed: completedSteps.organizationSetup || false,
 		},
-		{
-			id: "3",
-			name: "Custom Domain",
-			completed: completedSteps.customDomain || false,
-		},
-		{
-			id: "4",
-			name: "Invite your team",
-			completed: completedSteps.inviteTeam || false,
-		},
-		{
-			id: "5",
-			name: "Download",
-			completed: completedSteps.download || false,
-		},
-	];
+		...(buildEnv.NEXT_PUBLIC_IS_CAP
+			? [
+					{
+						name: "Custom Domain",
+						completed: completedSteps.customDomain || false,
+					},
+					{
+						name: "Invite your team",
+						completed: completedSteps.inviteTeam || false,
+					},
+					{
+						name: "Download",
+						completed: completedSteps.download || false,
+					},
+				]
+			: []),
+	].map((step, idx) => ({ ...step, id: String(idx + 1) }));
 
 	return (
 		<>

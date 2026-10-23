@@ -140,10 +140,10 @@ async function createMigrationRequest({
 	try {
 		const delivery = await sendEmail({
 			email: SUPPORT_EMAIL,
-			subject: `New Loom migration request: ${organization?.name ?? "Cap workspace"}`,
+			subject: `New Loom migration request: ${organization?.name ?? "Workspace"}`,
 			react: (
 				<LoomMigrationRequestEmail
-					organizationName={organization?.name ?? "Cap workspace"}
+					organizationName={organization?.name ?? "Workspace"}
 					requesterEmail={user.email}
 					workspaceName={normalizedWorkspaceName || null}
 					queueUrl={`${serverEnv().WEB_URL}/dashboard/admin/loom-migrations`}
@@ -209,7 +209,7 @@ async function saveMigrationAnswer({
 	await requireCustomerMigrationAccess(request.organizationId);
 	const normalizedAnswer = normalizeMigrationText(answer, "Answer", 2000);
 	if (!normalizedAnswer)
-		throw new LoomMigrationError("Enter the information Cap asked for.");
+		throw new LoomMigrationError("Enter the information we asked for.");
 	const result = await db()
 		.update(loomMigrationRequests)
 		.set({
@@ -382,7 +382,7 @@ async function saveMigrationStatus({
 				subject: `Loom migration: ${LOOM_MIGRATION_STATUS_LABELS[nextStatus]}`,
 				react: (
 					<LoomMigrationStatusEmail
-						organizationName={organization?.name ?? "your Cap workspace"}
+						organizationName={organization?.name ?? "your workspace"}
 						statusLabel={LOOM_MIGRATION_STATUS_LABELS[nextStatus]}
 						message={normalizedMessage || null}
 						dashboardUrl={`${serverEnv().WEB_URL}/dashboard/import/loom`}

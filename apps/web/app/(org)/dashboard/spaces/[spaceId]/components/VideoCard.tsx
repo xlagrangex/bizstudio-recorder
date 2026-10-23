@@ -194,7 +194,7 @@ const VideoCard: React.FC<VideoCardProps> = memo(
 									icon={faRecordVinyl}
 									className="size-3 text-gray-10"
 								/>
-								<p className="font-medium truncate text-gray-11">Caps</p>
+								<p className="font-medium truncate text-gray-11">Videos</p>
 							</>
 						)}
 					</div>

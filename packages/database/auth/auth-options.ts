@@ -214,7 +214,7 @@ export const authOptions = (ssoContext?: SsoAuthContext): NextAuthOptions => {
 							const email = OTPEmail({ code: token, email: identifier });
 							await sendEmail({
 								email: identifier,
-								subject: `Your Cap Verification Code`,
+								subject: `Your Bizstudio Recorder Verification Code`,
 								react: email,
 							});
 						}

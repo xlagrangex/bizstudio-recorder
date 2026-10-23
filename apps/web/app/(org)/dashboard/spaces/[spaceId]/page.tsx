@@ -36,7 +36,7 @@ import { runPromise } from "@/lib/server";
 import { SharedCaps } from "./SharedCaps";
 
 export const metadata: Metadata = {
-	title: "Shared Caps — Cap",
+	title: "Shared Videos — Bizstudio Recorder",
 };
 
 export type SpaceMemberData = {

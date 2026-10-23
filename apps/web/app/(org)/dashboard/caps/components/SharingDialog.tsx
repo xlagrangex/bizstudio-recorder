@@ -384,8 +384,8 @@ export const SharingDialog: React.FC<SharingDialogProps> = ({
 					icon={<FontAwesomeIcon icon={faShareNodes} className="size-3.5" />}
 					description={
 						activeTab === "Share"
-							? "Select how you would like to share the cap"
-							: "Copy the embed code to share your cap"
+							? "Select how you would like to share the video"
+							: "Copy the embed code to share your video"
 					}
 				>
 					<DialogTitle className="truncate w-full max-w-[320px]">
@@ -468,8 +468,8 @@ export const SharingDialog: React.FC<SharingDialogProps> = ({
 									</Button>
 								</div>
 								<p className="mt-1 mb-2 text-xs text-gray-10">
-									Invite someone by email. They can view with a Cap account
-									using that address.
+									Invite someone by email. They can view with an account using
+									that address.
 								</p>
 								<div className="flex gap-2">
 									<Input

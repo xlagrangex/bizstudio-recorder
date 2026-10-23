@@ -101,11 +101,11 @@ const access = (
 });
 
 describe("pickShareDashboardDestination", () => {
-	it("sends the owner back to My Caps", () => {
+	it("sends the owner back to My Videos", () => {
 		expect(pickShareDashboardDestination(access({ isOwner: true }))).toEqual({
 			kind: "caps",
 			href: "/dashboard/caps",
-			label: "My Caps",
+			label: "My Videos",
 			switchOrganizationId: null,
 		});
 	});

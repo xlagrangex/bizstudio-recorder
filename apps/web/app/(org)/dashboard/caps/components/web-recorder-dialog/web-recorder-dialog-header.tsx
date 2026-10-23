@@ -46,9 +46,9 @@ export const WebRecorderDialogHeader = ({
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 103 40"
-						aria-label="Cap Logo"
+						aria-label="Bizstudio Recorder logo"
 					>
-						<title>Cap Logo</title>
+						<title>Bizstudio Recorder logo</title>
 						<rect
 							width="39.5"
 							height="39.5"

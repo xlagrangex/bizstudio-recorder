@@ -1,6 +1,6 @@
 {
-	"name": "",
-	"short_name": "",
+	"name": "Bizstudio Recorder",
+	"short_name": "Recorder",
 	"icons": [
 		{
 			"src": "/android-chrome-192x192.png",

@@ -147,7 +147,7 @@ describe("updateSeatQuantity", () => {
 				"@/actions/organization/update-seat-quantity"
 			);
 			await expect(updateSeatQuantity("org-1" as never, 2)).rejects.toThrow(
-				"No matching Cap Pro subscription",
+				"No matching Pro subscription",
 			);
 			expect(mockStripe.subscriptions.update).not.toHaveBeenCalled();
 			expect(mockDb.set).not.toHaveBeenCalled();
@@ -167,7 +167,7 @@ describe("updateSeatQuantity", () => {
 			"@/actions/organization/update-seat-quantity"
 		);
 		await expect(updateSeatQuantity("org-1" as never, 2)).rejects.toThrow(
-			"No matching Cap Pro subscription",
+			"No matching Pro subscription",
 		);
 		expect(mockStripe.subscriptions.update).not.toHaveBeenCalled();
 		expect(mockDb.set).not.toHaveBeenCalled();

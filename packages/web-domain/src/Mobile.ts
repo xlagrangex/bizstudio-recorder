@@ -885,8 +885,8 @@ export class MobileApiContract extends HttpApi.make("cap-mobile-api")
 	.add(MobileHttpApi)
 	.annotateContext(
 		OpenApi.annotations({
-			title: "Cap Mobile API",
-			description: "Authenticated API used by the Cap iOS app",
+			title: "Bizstudio Recorder Mobile API",
+			description: "Authenticated API used by the iOS app",
 		}),
 	)
 	.prefix("/api/mobile") {}

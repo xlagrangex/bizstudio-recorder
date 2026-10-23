@@ -103,7 +103,7 @@ export const SelectedCapsBar = ({
 									<ConfirmationDialog
 										open={confirmOpen}
 										icon={<FontAwesomeIcon icon={faFilm} />}
-										title="Delete selected Caps"
+										title="Delete selected videos"
 										description={`Are you sure you want to delete ${
 											selectedCaps.length
 										} cap${

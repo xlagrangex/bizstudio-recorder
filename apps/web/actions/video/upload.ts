@@ -196,7 +196,7 @@ export async function createVideoAndGetUploadUrl({
 		}
 
 		const idToUse = Video.VideoId.make(videoId || nanoId());
-		const videoTitle = `Cap ${
+		const videoTitle = `${
 			isScreenshot ? "Screenshot" : isUpload ? "Upload" : "Recording"
 		} - ${formattedDate}`;
 

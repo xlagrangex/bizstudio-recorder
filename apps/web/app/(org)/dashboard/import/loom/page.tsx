@@ -6,7 +6,7 @@ import {
 import { ImportLoomPage } from "./ImportLoomPage";
 
 export const metadata: Metadata = {
-	title: "Import from Loom — Cap",
+	title: "Import from Loom — Bizstudio Recorder",
 };
 
 export default async function Page({

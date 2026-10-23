@@ -151,7 +151,7 @@ const htmlResponse = ({
 		? `${escapeHtml(body)} Redirecting in <span class="countdown" id="cap-countdown">${redirectSeconds}</span>s.`
 		: escapeHtml(body);
 	const action = redirectUrl
-		? `<div class="actions"><a class="button" href="${escapeHtml(redirectUrl)}">${escapeHtml(redirectLabel ?? "Back to Cap")}</a></div>`
+		? `<div class="actions"><a class="button" href="${escapeHtml(redirectUrl)}">${escapeHtml(redirectLabel ?? "Back to Bizstudio Recorder")}</a></div>`
 		: "";
 	const script = redirectUrl
 		? `<script>(function(){var s=${redirectSeconds};var el=document.getElementById('cap-countdown');var t=setInterval(function(){s-=1;if(s<=0){clearInterval(t);window.location.replace(${JSON.stringify(redirectUrl)});return;}if(el)el.textContent=String(s);},1000);})();</script>`
@@ -443,7 +443,7 @@ app.get("/google-drive/callback", async (c) => {
 			return c.html(
 				htmlResponse({
 					title: "Google Drive was not connected",
-					body: "You can close this window and try again from Cap settings.",
+					body: "You can close this window and try again from Bizstudio Recorder settings.",
 				}),
 				400,
 			);
@@ -584,7 +584,7 @@ app.get("/google-drive/callback", async (c) => {
 				organizationId
 					? {
 							title: "Google Drive connected",
-							body: 'Your Google account is now linked to Cap. We\'ve created a "Cap" folder in your Drive to store your recordings.',
+							body: 'Your Google account is now linked to Bizstudio Recorder. We\'ve created a "Cap" folder in your Drive to store your recordings.',
 							redirectUrl: agentRedirect
 								? agentSuccessRedirectUrl
 								: orgRedirectUrl,
@@ -593,7 +593,7 @@ app.get("/google-drive/callback", async (c) => {
 						}
 					: {
 							title: "Google Drive connected",
-							body: "Return to the Cap app to finish setting up your storage.",
+							body: "Return to Bizstudio Recorder to finish setting up your storage.",
 						},
 			),
 		);
@@ -606,7 +606,7 @@ app.get("/google-drive/callback", async (c) => {
 							title: "Google Drive was not connected",
 							body: agentRedirect
 								? "Something went wrong while linking your Google account. You can return to your terminal and try again."
-								: "Something went wrong while linking your Google account. You can try again from Cap settings.",
+								: "Something went wrong while linking your Google account. You can try again from Bizstudio Recorder settings.",
 							redirectUrl: agentRedirect
 								? agentCancelledRedirectUrl
 								: orgRedirectUrl,
@@ -615,7 +615,7 @@ app.get("/google-drive/callback", async (c) => {
 						}
 					: {
 							title: "Google Drive was not connected",
-							body: "You can close this window and try again from Cap settings.",
+							body: "You can close this window and try again from Bizstudio Recorder settings.",
 						},
 			),
 			500,

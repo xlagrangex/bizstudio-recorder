@@ -85,7 +85,7 @@ const AdminNavItems = ({ toggleMobileNav }: Props) => {
 
 	const manageNavigation = [
 		{
-			name: "My Caps",
+			name: "My Videos",
 			href: `/dashboard/caps`,
 			extraText: userCapsCount,
 			icon: <CapIcon />,
@@ -99,7 +99,7 @@ const AdminNavItems = ({ toggleMobileNav }: Props) => {
 			subNav: [],
 		},
 		{
-			name: "Record a Cap",
+			name: "Record a Video",
 			href: `/dashboard/caps/record`,
 			icon: <RecordIcon />,
 			subNav: [],
@@ -463,7 +463,7 @@ const AdminNavItems = ({ toggleMobileNav }: Props) => {
 							</div>
 						)}
 						<p className="mt-2 text-xs text-center truncate text-gray-10">
-							Cap Software, Inc. {new Date().getFullYear()}.
+							Bizstudio Recorder {new Date().getFullYear()}.
 						</p>
 					</div>
 				</nav>
@@ -471,7 +471,7 @@ const AdminNavItems = ({ toggleMobileNav }: Props) => {
 			<DialogContent className="p-0 w-full max-w-md rounded-xl bg-gray-2">
 				<DialogHeader
 					icon={<FontAwesomeIcon icon={faBuilding} />}
-					description="A new organization to share caps with your team"
+					description="A new organization to share videos with your team"
 				>
 					<DialogTitle className="text-lg text-gray-12">
 						Create New Organization
