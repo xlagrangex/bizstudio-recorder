@@ -313,7 +313,9 @@ fn forward_macos_deep_links(
         .take(33)
         .collect::<Vec<_>>();
     if urls.len() > 32 {
-        return Err(std::io::Error::other("Too many forwarded Cap deep links"));
+        return Err(std::io::Error::other(
+            "Too many forwarded Bizstudio Recorder deep links",
+        ));
     }
     let started = std::time::Instant::now();
     let timeout = std::time::Duration::from_secs(2);
@@ -578,7 +580,7 @@ fn write_linux_reopen_actions(
     if actions.len() > MAX_FORWARDED_DEEP_LINK_BYTES {
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidData,
-            "Too many forwarded Cap action bytes",
+            "Too many forwarded Bizstudio Recorder action bytes",
         ));
     }
     let mut header = linux_reopen_payload(owner);
@@ -598,7 +600,7 @@ fn parse_linux_reopen_action(raw: &str) -> std::io::Result<crate::deeplink::Deep
     let invalid = || {
         std::io::Error::new(
             std::io::ErrorKind::InvalidData,
-            "Invalid forwarded Cap action URL",
+            "Invalid forwarded Bizstudio Recorder action URL",
         )
     };
     if raw.len() > MAX_FORWARDED_DEEP_LINK_BYTES
@@ -625,7 +627,7 @@ fn linux_reopen_action_payload(
         {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
-                "Too many forwarded Cap actions",
+                "Too many forwarded Bizstudio Recorder actions",
             ));
         }
         payload.extend_from_slice(&(argument.len() as u32).to_be_bytes());
@@ -642,7 +644,7 @@ fn read_linux_reopen_actions(
     let invalid = || {
         std::io::Error::new(
             std::io::ErrorKind::InvalidData,
-            "Invalid forwarded Cap action payload",
+            "Invalid forwarded Bizstudio Recorder action payload",
         )
     };
     let mut request = [0; 56];

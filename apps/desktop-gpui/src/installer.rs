@@ -192,7 +192,9 @@ impl<'a> Verifier<'a> {
         match key.verify_stream(signature) {
             Ok(verifier) => Ok(Self::Stream(Box::new(verifier))),
             Err(minisign_verify::Error::UnsupportedLegacyMode) => Ok(Self::Buffered),
-            Err(error) => Err(format!("The update was not signed by Cap: {error}")),
+            Err(error) => Err(format!(
+                "The update was not signed by Bizstudio Recorder: {error}"
+            )),
         }
     }
 
@@ -240,7 +242,7 @@ pub(crate) fn check_artifact_kind(file: &Path, kind: ArtifactKind) -> Result<(),
     if kind.matches(&header[..read]) {
         Ok(())
     } else {
-        Err("The downloaded file is not a Cap package for this platform".to_string())
+        Err("The downloaded file is not a Bizstudio Recorder package for this platform".to_string())
     }
 }
 
@@ -252,7 +254,7 @@ fn staging_root() -> PathBuf {
     }
     dirs::cache_dir()
         .unwrap_or_else(std::env::temp_dir)
-        .join("so.cap.desktop")
+        .join(crate::store::APP_IDENTIFIER)
         .join("updates")
 }
 
@@ -522,7 +524,7 @@ fn replace_directory_with_privileges(new: &Path, destination: &Path) -> Result<(
         Ok(())
     } else {
         Err(format!(
-            "Cap couldn't replace {}. {}",
+            "Bizstudio Recorder couldn't replace {}. {}",
             destination.display(),
             String::from_utf8_lossy(&output.stderr).trim()
         ))
@@ -576,7 +578,7 @@ pub(crate) fn install_deb(package: &Path) -> Result<(), String> {
     if status.success() {
         Ok(())
     } else {
-        Err("The package wasn't installed. Approve the system prompt, or install it from cap.so/download.".to_string())
+        Err("The package wasn't installed. Approve the system prompt and try again.".to_string())
     }
 }
 

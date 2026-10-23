@@ -621,6 +621,16 @@ pub fn list_displays() -> Vec<(CaptureDisplay, Display)> {
 const MACOS_FLOATING_WINDOW_LEVEL: i32 = 3;
 
 #[cfg(target_os = "macos")]
+const OWN_BUNDLE_IDENTIFIER_PREFIXES: [&str; 2] = ["so.cap.desktop", "it.bizstudio.recorder"];
+
+#[cfg(target_os = "macos")]
+fn is_own_bundle(identifier: &str) -> bool {
+    OWN_BUNDLE_IDENTIFIER_PREFIXES
+        .iter()
+        .any(|prefix| identifier.starts_with(prefix))
+}
+
+#[cfg(target_os = "macos")]
 pub fn is_listable_macos_window(
     level: Option<i32>,
     owner_name: &str,
@@ -637,7 +647,7 @@ pub fn is_listable_macos_window(
     }
 
     let is_third_party_bundle = bundle_identifier.is_some_and(|identifier| {
-        !identifier.starts_with("com.apple.") && !identifier.starts_with("so.cap.desktop")
+        !identifier.starts_with("com.apple.") && !is_own_bundle(identifier)
     });
 
     if is_accessory_application {
@@ -647,7 +657,7 @@ pub fn is_listable_macos_window(
     }
 
     level == Some(MACOS_FLOATING_WINDOW_LEVEL)
-        && bundle_identifier.is_some_and(|identifier| !identifier.starts_with("so.cap.desktop"))
+        && bundle_identifier.is_some_and(|identifier| !is_own_bundle(identifier))
 }
 
 pub fn list_windows() -> Vec<(CaptureWindow, Window)> {
@@ -858,13 +868,15 @@ mod tests {
             false,
             false,
         ));
-        assert!(!is_listable_macos_window(
-            Some(MACOS_FLOATING_WINDOW_LEVEL),
-            "Cap",
-            Some("so.cap.desktop.dev"),
-            false,
-            false,
-        ));
+        for bundle in ["so.cap.desktop.dev", "it.bizstudio.recorder"] {
+            assert!(!is_listable_macos_window(
+                Some(MACOS_FLOATING_WINDOW_LEVEL),
+                "Bizstudio Recorder",
+                Some(bundle),
+                false,
+                false,
+            ));
+        }
         assert!(!is_listable_macos_window(
             Some(MACOS_FLOATING_WINDOW_LEVEL),
             "cap-gpui",
@@ -921,6 +933,7 @@ mod tests {
                 None,
                 Some("com.apple.controlcenter"),
                 Some("so.cap.desktop.dev"),
+                Some("it.bizstudio.recorder"),
             ] {
                 for include_accessory_panels in [false, true] {
                     assert!(!is_listable_macos_window(

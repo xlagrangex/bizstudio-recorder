@@ -2281,7 +2281,8 @@ impl ScreenshotEditorWindow {
                     this.update_in(cx, |this, window, cx| {
                         this.finish_share_error(
                             toast,
-                            "Sign in to Cap in your browser, then share again".into(),
+                            "Sign in to Bizstudio Recorder in your browser, then share again"
+                                .into(),
                             window,
                             cx,
                         );
@@ -2345,7 +2346,7 @@ impl ScreenshotEditorWindow {
         let bundle = self.bundle.clone();
         cx.spawn_in(window, async move |_this, cx| {
             if !crate::platform::confirm_dialog(
-                "Cap",
+                "Bizstudio Recorder",
                 "Are you sure you want to delete this screenshot?",
                 "Yes",
                 "No",
@@ -4611,7 +4612,7 @@ fn spinning_logo(theme: &Theme) -> impl IntoElement {
             } else {
                 "icons/logo-full.svg"
             })
-            .w(px(103.))
+            .w(px(129.))
             .h(px(40.))
             .opacity(0.5)
             .text_color(theme.gray_8),

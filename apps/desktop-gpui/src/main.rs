@@ -147,9 +147,7 @@ fn resolve_auto_screenshot_editor(target: &str) -> Option<std::path::PathBuf> {
 /// stdout, plus a rolling daily file the Feedback page can upload.
 ///
 /// Mirrors `src-tauri/src/main.rs`: `tracing_appender::rolling::daily` into
-/// `~/Library/Logs/so.cap.desktop` on macOS (the directory the Tauri app
-/// already writes into) under a **different** filename prefix, so the two apps
-/// never interleave lines into one file. Returns the non-blocking writer's
+/// `~/Library/Logs/<app identifier>` on macOS under its own filename prefix. Returns the non-blocking writer's
 /// guard, which has to outlive `main` or the last lines never reach the disk.
 fn init_logging() -> Option<tracing_appender::non_blocking::WorkerGuard> {
     use tracing_subscriber::{Layer as _, layer::SubscriberExt as _, util::SubscriberInitExt as _};
@@ -277,7 +275,13 @@ fn main() {
         std::process::exit(1);
     }
 
+    let legacy_migration = store::migrate_legacy_app_data_dir();
     let _log_guard = init_logging();
+    match legacy_migration {
+        Some(Ok(legacy)) => tracing::info!("seeded app data from {}", legacy.display()),
+        Some(Err(error)) => tracing::error!("legacy app data migration failed: {error}"),
+        None => {}
+    }
 
     single_instance::acquire();
     if cfg!(debug_assertions) {
@@ -364,13 +368,13 @@ fn main() {
                     titlebar: None,
                     #[cfg(target_os = "windows")]
                     titlebar: Some(gpui::TitlebarOptions {
-                        title: Some("Cap".into()),
+                        title: Some("Bizstudio Recorder".into()),
                         appears_transparent: true,
                         ..Default::default()
                     }),
                     #[cfg(target_os = "linux")]
                     titlebar: Some(gpui::TitlebarOptions {
-                        title: Some("Cap".into()),
+                        title: Some("Bizstudio Recorder".into()),
                         ..Default::default()
                     }),
                     #[cfg(target_os = "linux")]
@@ -435,7 +439,9 @@ fn main() {
         }
         #[cfg(target_os = "linux")]
         single_instance::init_linux_reopen(cx);
-        updates::schedule_startup_check(cx);
+        if updates::ENABLED {
+            updates::schedule_startup_check(cx);
+        }
         app_windows::schedule_launch_render_warmup(cx);
         upload::queue::init(cx);
 

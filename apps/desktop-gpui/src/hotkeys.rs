@@ -324,7 +324,7 @@ fn reserve_wayland_stop(generation: u64, cx: &mut App) -> anyhow::Result<()> {
         gpui_tokio::Tokio::handle(cx).spawn(run_wayland_stop(generation, cancelled, events));
     cx.set_global(WaylandStop {
         generation,
-        label: "Approve a recording shortcut, or activate the Cap Stop tray icon when it appears. Recording has not started.".into(),
+        label: "Approve a recording shortcut, or activate the Bizstudio Recorder Stop tray icon when it appears. Recording has not started.".into(),
         ready: false,
         cancel,
         worker: Some(worker),
@@ -468,7 +468,7 @@ async fn run_tray_stop(
     })?;
     let received = tray.events();
     let outcome = async {
-        events.send(WaylandStopEvent::Ready("Activate the Cap Stop tray icon to start. Activate the same icon again to stop. Recording will not start until you use that control.".into()))?;
+        events.send(WaylandStopEvent::Ready("Activate the Bizstudio Recorder Stop tray icon to start. Activate the same icon again to stop. Recording will not start until you use that control.".into()))?;
         loop {
             tokio::select! {
                 biased;
@@ -512,7 +512,7 @@ async fn run_portal_stop(
         let changed = portal.receive_shortcuts_changed().await?;
         let closed = session.receive_closed().await?;
         futures_util::pin_mut!(activated, deactivated, changed, closed);
-        let shortcuts = [NewShortcut::new(&shortcut_id, "Start or stop this Cap recording").preferred_trigger("CTRL+SHIFT+F9")];
+        let shortcuts = [NewShortcut::new(&shortcut_id, "Start or stop this Bizstudio Recorder recording").preferred_trigger("CTRL+SHIFT+F9")];
         let bind = portal.bind_shortcuts(&session, &shortcuts, None);
         let response = tokio::select! {
             _ = cancel.recv_async() => return Ok(()),
@@ -574,7 +574,7 @@ pub fn reserve_clean_capture_stop(
     let actions = actions_for(&hotkeys.bindings, key.id());
     if clean_capture_shortcut_conflicts(&actions) {
         anyhow::bail!(
-            "Ctrl+Shift+F9 is assigned to another Cap action. Change that shortcut before recording."
+            "Ctrl+Shift+F9 is assigned to another Bizstudio Recorder action. Change that shortcut before recording."
         );
     }
     if actions.is_empty() {

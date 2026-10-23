@@ -329,8 +329,8 @@ pub fn build_menu(mode: Mode, previous: &[PreviousItem], version: &str) -> Vec<E
     // `logging::upload_log_file` needs the auth token and the HTTP client,
     // neither of which this app has.
     entries.push(Entry::disabled("Upload Logs"));
-    entries.push(Entry::disabled(format!("Cap v{version}")));
-    entries.push(Entry::item("Quit Cap", TrayItem::Quit));
+    entries.push(Entry::disabled(format!("Bizstudio Recorder v{version}")));
+    entries.push(Entry::item("Quit Bizstudio Recorder", TrayItem::Quit));
 
     entries
 }
@@ -339,8 +339,8 @@ pub fn build_onboarding_menu(version: &str) -> Vec<Entry> {
     vec![
         Entry::item("Request Permissions", TrayItem::RequestPermissions),
         Entry::Separator,
-        Entry::disabled(format!("Cap v{version}")),
-        Entry::item("Quit Cap", TrayItem::Quit),
+        Entry::disabled(format!("Bizstudio Recorder v{version}")),
+        Entry::item("Quit Bizstudio Recorder", TrayItem::Quit),
     ]
 }
 
@@ -1335,7 +1335,12 @@ mod tests {
         let menu = build_onboarding_menu("0.1.0");
         assert_eq!(
             titles(&menu),
-            vec!["Request Permissions", "-", "Cap v0.1.0", "Quit Cap",]
+            vec![
+                "Request Permissions",
+                "-",
+                "Bizstudio Recorder v0.1.0",
+                "Quit Bizstudio Recorder",
+            ]
         );
     }
 
@@ -1360,8 +1365,8 @@ mod tests {
                 "Settings",
                 "-",
                 "Upload Logs",
-                "Cap v0.1.0",
-                "Quit Cap",
+                "Bizstudio Recorder v0.1.0",
+                "Quit Bizstudio Recorder",
             ]
         );
     }
@@ -1472,6 +1477,6 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert_eq!(disabled, vec!["Upload Logs", "Cap v0.1.0"]);
+        assert_eq!(disabled, vec!["Upload Logs", "Bizstudio Recorder v0.1.0"]);
     }
 }

@@ -504,9 +504,9 @@ impl Render for ControlsWindow {
         self.theme.refresh(window, cx, false);
         let session = self.session.read(cx);
         let issue = session.error.clone().or_else(|| {
-            session
-                .storage_warning
-                .then(|| "Low storage. Cap will stop soon to save your recording.".to_owned())
+            session.storage_warning.then(|| {
+                "Low storage. Bizstudio Recorder will stop soon to save your recording.".to_owned()
+            })
         });
 
         div()

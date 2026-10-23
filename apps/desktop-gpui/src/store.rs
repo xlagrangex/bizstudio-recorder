@@ -1,6 +1,6 @@
 //! Persisted state: this app's own, and the Tauri app's settings store.
 //!
-//! Two files, both inside `so.cap.desktop`'s app-data dir:
+//! Two files, both inside the app-data dir ([`app_data_dir`]):
 //!
 //! - `gpui-state.json` -- ours. The Tauri app keeps the camera window's chrome
 //!   state in the webview's `localStorage` (`cameraWindowState`); there is no
@@ -148,29 +148,41 @@ pub struct ExportPrefs {
     pub organization_id: Option<String>,
 }
 
-/// `so.cap.desktop`'s app-data dir -- where both stores live.
-///
-/// Same identifier the Tauri app uses (`so.cap.desktop`), resolved the way
-/// each OS's app-data convention spells it so a recording made on Windows or
-/// Linux lands in the folder both apps already agree on.
-pub fn app_data_dir() -> PathBuf {
-    if let Ok(dir) = std::env::var("CAP_GPUI_APP_DATA_DIR")
-        && !dir.trim().is_empty()
-    {
-        return PathBuf::from(dir);
-    }
+pub const APP_IDENTIFIER: &str = "it.bizstudio.recorder";
 
+/// The upstream Cap identifier. Its data dir is only ever read, once, to seed
+/// [`APP_IDENTIFIER`]'s, so this fork never shares state with an installed Cap.
+const LEGACY_APP_IDENTIFIER: &str = "so.cap.desktop";
+
+/// The app-data dir -- where both stores live -- resolved the way each OS's
+/// app-data convention spells it.
+pub fn app_data_dir() -> PathBuf {
+    if let Some(dir) = app_data_dir_override() {
+        return dir;
+    }
+    platform_app_data_dir(APP_IDENTIFIER)
+}
+
+fn app_data_dir_override() -> Option<PathBuf> {
+    std::env::var("CAP_GPUI_APP_DATA_DIR")
+        .ok()
+        .filter(|dir| !dir.trim().is_empty())
+        .map(PathBuf::from)
+}
+
+fn platform_app_data_dir(identifier: &str) -> PathBuf {
     #[cfg(target_os = "macos")]
     {
         PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
-            .join("Library/Application Support/so.cap.desktop")
+            .join("Library/Application Support")
+            .join(identifier)
     }
     #[cfg(target_os = "windows")]
     {
         std::env::var_os("APPDATA")
             .map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("so.cap.desktop")
+            .join(identifier)
     }
     #[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
     {
@@ -180,8 +192,72 @@ pub fn app_data_dir() -> PathBuf {
                 PathBuf::from(std::env::var_os("HOME").unwrap_or_else(|| ".".into()))
                     .join(".local/share")
             });
-        base.join("so.cap.desktop")
+        base.join(identifier)
     }
+}
+
+/// Seed the app-data dir from the upstream Cap one on first launch.
+///
+/// Runs before logging and the single-instance lock, both of which create the
+/// new dir and would otherwise make it look already migrated. The copy goes
+/// to a sibling staging dir that is renamed into place only once complete, so
+/// an interrupted copy is retried on the next launch instead of leaving a
+/// half-populated dir behind. The legacy dir is never modified.
+pub fn migrate_legacy_app_data_dir() -> Option<Result<PathBuf, String>> {
+    if app_data_dir_override().is_some() {
+        return None;
+    }
+    let target = platform_app_data_dir(APP_IDENTIFIER);
+    let legacy = platform_app_data_dir(LEGACY_APP_IDENTIFIER);
+    seed_from_legacy_dir(&legacy, &target).map(|result| result.map(|()| legacy))
+}
+
+fn seed_from_legacy_dir(legacy: &Path, target: &Path) -> Option<Result<(), String>> {
+    if target.exists() || !legacy.is_dir() {
+        return None;
+    }
+    let mut staging_name = target.file_name()?.to_os_string();
+    staging_name.push(".migrating");
+    let staging = target.with_file_name(staging_name);
+    let _ = std::fs::remove_dir_all(&staging);
+    let result = copy_legacy_tree(legacy, &staging, true)
+        .and_then(|()| std::fs::rename(&staging, target))
+        .map_err(|error| {
+            let _ = std::fs::remove_dir_all(&staging);
+            format!(
+                "couldn't copy {} to {}: {error}",
+                legacy.display(),
+                target.display()
+            )
+        });
+    Some(result)
+}
+
+/// Per-process files (pid, lock, IPC socket, handoff markers) belong to
+/// whichever instance created them; copying a live Cap's pid would make the
+/// single-instance check here hand off to that other app.
+fn is_runtime_marker(name: &std::ffi::OsStr) -> bool {
+    let name = name.to_string_lossy();
+    name.starts_with("cap-gpui.") || name.starts_with("cap-classic.")
+}
+
+fn copy_legacy_tree(source: &Path, destination: &Path, root: bool) -> std::io::Result<()> {
+    std::fs::create_dir_all(destination)?;
+    for entry in std::fs::read_dir(source)? {
+        let entry = entry?;
+        let name = entry.file_name();
+        if root && is_runtime_marker(&name) {
+            continue;
+        }
+        let file_type = entry.file_type()?;
+        let to = destination.join(&name);
+        if file_type.is_dir() {
+            copy_legacy_tree(&entry.path(), &to, false)?;
+        } else if file_type.is_file() {
+            std::fs::copy(entry.path(), &to)?;
+        }
+    }
+    Ok(())
 }
 
 pub(crate) fn bundled_resource_dirs() -> Vec<PathBuf> {
@@ -797,7 +873,7 @@ settings_enum! {
     /// `PostStudioRecordingBehaviour`.
     PostStudioBehaviour {
         OpenEditor = "openEditor", "Open editor";
-        ShowOverlay = "showOverlay", "Show Cap";
+        ShowOverlay = "showOverlay", "Show Bizstudio Recorder";
         DoNothing = "doNothing", "Do nothing";
     }
     default = OpenEditor
@@ -954,15 +1030,15 @@ impl WindowExclusion {
 /// `DEFAULT_EXCLUDED_WINDOW_TITLES` in `general_settings.rs`, which is what
 /// the page's Reset button asks the backend for.
 pub const DEFAULT_EXCLUDED_WINDOW_TITLES: &[&str] = &[
-    "Cap",
-    "Cap Settings",
-    "Cap Recording Controls",
-    "Cap Camera",
-    "Cap Window Capture Occluder",
-    "Cap Capture Area",
-    "Cap Mode Selection",
-    "Cap Recordings Overlay",
-    "Cap Teleprompter",
+    "Bizstudio Recorder",
+    "Bizstudio Recorder Settings",
+    "Bizstudio Recorder Recording Controls",
+    "Bizstudio Recorder Camera",
+    "Bizstudio Recorder Window Capture Occluder",
+    "Bizstudio Recorder Capture Area",
+    "Bizstudio Recorder Mode Selection",
+    "Bizstudio Recorder Recordings Overlay",
+    "Bizstudio Recorder Teleprompter",
 ];
 
 pub fn default_excluded_windows() -> Vec<WindowExclusion> {
@@ -980,9 +1056,8 @@ pub fn excluded_windows_to_json(windows: &[WindowExclusion]) -> Value {
     Value::Array(windows.iter().map(WindowExclusion::to_json).collect())
 }
 
-/// `https://cap.so` -- `default_server_url()` in `general_settings.rs`, which
-/// is also what `clientEnv.VITE_SERVER_URL` resolves to in a release build.
-pub const DEFAULT_SERVER_URL: &str = "https://cap.so";
+/// The Bizstudio self-hosted server; `serverUrl` in the store overrides it.
+pub const DEFAULT_SERVER_URL: &str = "https://rec.bizstudio.it";
 
 /// `DEFAULT_FILENAME_TEMPLATE` in `src-tauri/src/recording.rs`, spelled the
 /// same way `general.tsx` spells it.
@@ -1521,7 +1596,7 @@ pub fn hotkey_from_value(value: &Value) -> Option<Hotkey> {
 
 /// `DEFAULT_TRANSCRIPTION_HINTS` (`apps/desktop/src/utils/general-settings.ts`).
 pub const DEFAULT_TRANSCRIPTION_HINTS: &[&str] =
-    &["Cap", "TypeScript", "My Brand Name", "mywebsite.com"];
+    &["Bizstudio", "TypeScript", "My Brand Name", "mywebsite.com"];
 
 /// `normalizeTranscriptionHints`: strip NULs, trim, drop empties and
 /// duplicates, first occurrence wins.
@@ -1884,7 +1959,7 @@ fn default_post() -> String {
 }
 
 fn default_notify_title() -> String {
-    "Cap Automation".to_string()
+    "Bizstudio Recorder".to_string()
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -2009,6 +2084,39 @@ mod tests {
         assert!(!marker.exists());
         super::clear_handoff_marker_at(&marker);
         std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn legacy_dir_seeds_a_missing_target_once_without_runtime_markers() {
+        let root = tempfile::tempdir().unwrap();
+        let legacy = root.path().join("so.cap.desktop");
+        let target = root.path().join("it.bizstudio.recorder");
+        std::fs::create_dir_all(legacy.join("recordings/a.cap")).unwrap();
+        std::fs::write(legacy.join("store"), "{}").unwrap();
+        std::fs::write(legacy.join("recordings/a.cap/meta.json"), "m").unwrap();
+        std::fs::write(legacy.join("cap-gpui.pid"), "1").unwrap();
+
+        assert_eq!(super::seed_from_legacy_dir(&legacy, &target), Some(Ok(())));
+        assert_eq!(std::fs::read_to_string(target.join("store")).unwrap(), "{}");
+        assert!(target.join("recordings/a.cap/meta.json").is_file());
+        assert!(!target.join("cap-gpui.pid").exists());
+        assert!(legacy.join("cap-gpui.pid").exists());
+        assert!(!root.path().join("it.bizstudio.recorder.migrating").exists());
+
+        std::fs::write(legacy.join("store"), "changed").unwrap();
+        assert_eq!(super::seed_from_legacy_dir(&legacy, &target), None);
+        assert_eq!(std::fs::read_to_string(target.join("store")).unwrap(), "{}");
+    }
+
+    #[test]
+    fn missing_legacy_dir_is_not_a_migration() {
+        let root = tempfile::tempdir().unwrap();
+        let target = root.path().join("it.bizstudio.recorder");
+        assert_eq!(
+            super::seed_from_legacy_dir(&root.path().join("so.cap.desktop"), &target),
+            None
+        );
+        assert!(!target.exists());
     }
 
     use super::*;
@@ -3151,7 +3259,7 @@ mod tests {
             absent
                 .excluded_windows
                 .iter()
-                .any(|e| e.window_title.as_deref() == Some("Cap Camera"))
+                .any(|e| e.window_title.as_deref() == Some("Bizstudio Recorder Camera"))
         );
 
         let mut general = Map::new();

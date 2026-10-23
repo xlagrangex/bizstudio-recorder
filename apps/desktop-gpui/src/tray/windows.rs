@@ -97,7 +97,7 @@ fn create_tray(mode: Mode, entries: &[Entry]) -> anyhow::Result<Tray> {
     let native_menu = build_native_menu(entries)?;
     let icon = TrayIconBuilder::new()
         .with_id(TRAY_ID)
-        .with_tooltip("Cap")
+        .with_tooltip("Bizstudio Recorder")
         .with_icon(decode_tray_icon(DEFAULT_ICON)?)
         .with_menu(Box::new(native_menu.menu.clone()))
         .build()?;
@@ -222,9 +222,9 @@ pub fn set_recording(recording: bool, cx: &mut App) {
         Err(error) => tracing::warn!("failed to decode the Windows tray icon: {error:#}"),
     }
     let tooltip = if recording {
-        "Cap - Stop Recording"
+        "Bizstudio Recorder - Stop Recording"
     } else {
-        "Cap"
+        "Bizstudio Recorder"
     };
     if let Err(error) = tray.icon.set_tooltip(Some(tooltip)) {
         tracing::warn!("failed to update the Windows tray tooltip: {error}");

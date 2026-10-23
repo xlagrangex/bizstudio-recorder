@@ -57,7 +57,7 @@ const SELFTEST_BIN_ENV: &str = "CAP_GPUI_SELFTEST_BIN";
 /// The shipping app. The gpui binary is unbundled in dev and carries no
 /// sidecar of its own, so it borrows the installed app's -- the same fallback
 /// the editor's wallpaper lookup makes.
-const INSTALLED_APP: &str = "/Applications/Cap.app";
+const INSTALLED_APP: &str = "/Applications/Bizstudio Recorder.app";
 
 // ---------------------------------------------------------------------------
 // Log file
@@ -65,10 +65,8 @@ const INSTALLED_APP: &str = "/Applications/Cap.app";
 
 /// Where the rolling file log lives.
 ///
-/// macOS uses `~/Library/Logs/so.cap.desktop` -- the same directory the Tauri
-/// app writes into, so a user handing over "the Cap logs folder" hands over
-/// both apps' logs -- and every other platform uses
-/// `<local data>/so.cap.desktop/logs`, matching `main.rs` over there.
+/// macOS uses `~/Library/Logs/<app identifier>` and every other platform uses
+/// `<local data>/<app identifier>/logs`.
 pub fn logs_dir() -> PathBuf {
     if let Ok(directory) = std::env::var("CAP_GPUI_LOG_DIR")
         && !directory.trim().is_empty()
@@ -80,13 +78,13 @@ pub fn logs_dir() -> PathBuf {
         dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
             .join("Library/Logs")
-            .join("so.cap.desktop")
+            .join(crate::store::APP_IDENTIFIER)
     }
     #[cfg(not(target_os = "macos"))]
     {
         dirs::data_local_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("so.cap.desktop")
+            .join(crate::store::APP_IDENTIFIER)
             .join("logs")
     }
 }

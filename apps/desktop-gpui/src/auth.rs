@@ -12,7 +12,12 @@ use serde_json::{Value, json};
 
 use crate::store::{self, DEFAULT_SERVER_URL};
 
-pub const PRICING_URL: &str = "https://cap.so/pricing?ref=desktop";
+pub const PRICING_URL: &str = "https://rec.bizstudio.it";
+
+/// Upstream Cap's hosted service. Sign-in and upload take their hosted-only
+/// paths for this origin alone; every other server, the default
+/// [`DEFAULT_SERVER_URL`] included, is treated as self-hosted.
+const CAP_CLOUD_URL: &str = "https://cap.so";
 
 const CALLBACK_HTML: &str = r#"<!DOCTYPE html>
 <html lang="en">
@@ -20,7 +25,7 @@ const CALLBACK_HTML: &str = r#"<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
-  <title>Signed in — Cap</title>
+  <title>Signed in — Bizstudio Recorder</title>
   <style>
     html { height: 100%; }
     body { min-height: 100%; margin: 0; padding: 24px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; text-align: center; font-family: system-ui, sans-serif; background: #f8f9fa; color: #12161f; }
@@ -36,7 +41,7 @@ const CALLBACK_HTML: &str = r#"<!DOCTYPE html>
 <body>
   <main>
     <h1>You’re signed in</h1>
-    <p>You can close this tab and return to Cap.</p>
+    <p>You can close this tab and return to Bizstudio Recorder.</p>
   </main>
 </body>
 </html>
@@ -265,7 +270,7 @@ pub fn server_url() -> String {
 }
 
 pub fn is_server_url_custom() -> bool {
-    !has_same_origin(&server_url(), DEFAULT_SERVER_URL)
+    !has_same_origin(&server_url(), CAP_CLOUD_URL)
 }
 
 #[derive(Clone)]
@@ -618,7 +623,7 @@ pub fn should_use_local_server_session(configured: &str) -> bool {
     if cfg!(debug_assertions) {
         return true;
     }
-    !has_same_origin(configured, DEFAULT_SERVER_URL)
+    !has_same_origin(configured, CAP_CLOUD_URL)
 }
 
 pub fn has_same_origin(left: &str, right: &str) -> bool {

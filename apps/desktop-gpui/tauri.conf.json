@@ -45,7 +45,7 @@
 		"fileAssociations": [
 			{
 				"ext": ["cap"],
-				"name": "Cap Project",
+				"name": "Bizstudio Recorder Project",
 				"mimeType": "application/x-cap-project",
 				"role": "Editor"
 			}

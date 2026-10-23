@@ -1209,7 +1209,7 @@ pub fn open_settings(page: Page, cx: &mut App) {
             // repositions them. (The main window returns `None` there and
             // hand-draws its own.)
             titlebar: Some(gpui::TitlebarOptions {
-                title: Some("Cap Settings".into()),
+                title: Some("Bizstudio Recorder Settings".into()),
                 appears_transparent: true,
                 traffic_light_position: Some(settings_window::TRAFFIC_LIGHTS),
             }),
@@ -1393,7 +1393,7 @@ pub fn open_onboarding(cx: &mut App) {
             ..Default::default()
         },
         |window, cx| {
-            window.set_window_title("Welcome to Cap");
+            window.set_window_title("Welcome to Bizstudio Recorder");
             cx.new(|cx| OnboardingWindow::new(window, cx))
         },
     );
@@ -1538,7 +1538,7 @@ pub fn open_mode_select(cx: &mut App) -> bool {
             // puts them and only the title is hidden (`hidden_title(true)` +
             // `TitleBarStyle::Overlay`).
             titlebar: Some(gpui::TitlebarOptions {
-                title: Some("Cap Mode Selection".into()),
+                title: Some("Bizstudio Recorder Mode Selection".into()),
                 appears_transparent: true,
                 traffic_light_position: mode_select_window::TRAFFIC_LIGHTS,
             }),
@@ -1657,7 +1657,7 @@ pub fn open_teleprompter(cx: &mut App) {
             // true`, `trafficLightPosition: (14, 14)` -- the real AppKit
             // buttons, moved, as on the settings window.
             titlebar: Some(gpui::TitlebarOptions {
-                title: Some("Cap Teleprompter".into()),
+                title: Some("Bizstudio Recorder Teleprompter".into()),
                 appears_transparent: true,
                 traffic_light_position: Some(teleprompter_window::TRAFFIC_LIGHTS),
             }),
@@ -2623,16 +2623,16 @@ impl OwnWindow {
 
     pub fn title(self) -> &'static str {
         match self {
-            Self::Main => "Cap",
-            Self::Settings => "Cap Settings",
-            Self::Controls => "Cap Recording Controls",
-            Self::Camera => "Cap Camera",
-            Self::ModeSelect => "Cap Mode Selection",
-            Self::Teleprompter => "Cap Teleprompter",
-            Self::TargetSelect => "Cap Target Select",
-            Self::Editor => "Cap Editor",
-            Self::ScreenshotEditor => "Cap Screenshot Editor",
-            Self::Onboarding => "Welcome to Cap",
+            Self::Main => "Bizstudio Recorder",
+            Self::Settings => "Bizstudio Recorder Settings",
+            Self::Controls => "Bizstudio Recorder Recording Controls",
+            Self::Camera => "Bizstudio Recorder Camera",
+            Self::ModeSelect => "Bizstudio Recorder Mode Selection",
+            Self::Teleprompter => "Bizstudio Recorder Teleprompter",
+            Self::TargetSelect => "Bizstudio Recorder Target Select",
+            Self::Editor => "Bizstudio Recorder Editor",
+            Self::ScreenshotEditor => "Bizstudio Recorder Screenshot Editor",
+            Self::Onboarding => "Welcome to Bizstudio Recorder",
         }
     }
 }
@@ -3086,11 +3086,11 @@ pub(crate) fn clean_capture_camera_message(cx: &App) -> &'static str {
         .and_then(|lease| lease.config.as_ref())
         .is_some_and(|config| config.mode == RecordingMode::Instant)
     {
-        return "Cap will hide its preview and controls. Any selected camera will appear at its preview position with the selected shape and effects. Keep the whole preview inside the capture area. Opening Cap will stop this Instant recording before showing its controls.";
+        return "Bizstudio Recorder will hide its preview and controls. Any selected camera will appear at its preview position with the selected shape and effects. Keep the whole preview inside the capture area. Opening Bizstudio Recorder will stop this Instant recording before showing its controls.";
     }
     #[cfg(not(target_os = "linux"))]
     let _ = cx;
-    "Cap will hide its camera preview and recording controls. Any selected camera will keep recording as a separate editable track."
+    "Bizstudio Recorder will hide its camera preview and recording controls. Any selected camera will keep recording as a separate editable track."
 }
 
 pub fn clean_capture_owned(cx: &App) -> bool {
@@ -3358,7 +3358,9 @@ fn hide_retained_capture_windows(cx: &mut App) -> anyhow::Result<CleanVisibility
         let was_visible = handle
             .update(cx, |_, window, _| window.retained_visibility())?
             .ok_or_else(|| {
-                anyhow::anyhow!("A Cap window cannot acknowledge clean capture visibility")
+                anyhow::anyhow!(
+                    "A Bizstudio Recorder window cannot acknowledge clean capture visibility"
+                )
             })?;
         visible.push((handle, was_visible));
     }
@@ -3386,7 +3388,7 @@ fn hide_retained_capture_windows(cx: &mut App) -> anyhow::Result<CleanVisibility
                 let (_, visible) = receipt.await??;
                 anyhow::ensure!(
                     !visible,
-                    "The compositor did not acknowledge hiding a Cap window"
+                    "The compositor did not acknowledge hiding a Bizstudio Recorder window"
                 );
             }
             Ok::<_, anyhow::Error>(())
@@ -3885,7 +3887,7 @@ pub fn open_camera_window(cx: &mut App) {
             titlebar: None,
             #[cfg(target_os = "linux")]
             titlebar: Some(gpui::TitlebarOptions {
-                title: Some("Cap Camera".into()),
+                title: Some("Bizstudio Recorder Camera".into()),
                 ..Default::default()
             }),
             #[cfg(target_os = "linux")]
@@ -4755,7 +4757,7 @@ fn open_editor_window(
             // `Some(Some(LogicalPosition::new(20.0, 32.0)))`, and the header's
             // left group reserves an `h-full w-16` spacer for them.
             titlebar: Some(gpui::TitlebarOptions {
-                title: Some("Cap Editor".into()),
+                title: Some("Bizstudio Recorder Editor".into()),
                 appears_transparent: true,
                 traffic_light_position: editor_window::TRAFFIC_LIGHTS,
             }),
@@ -6106,7 +6108,7 @@ pub(crate) fn request_editor_deletion(
             platform::alert_dialog("Recording retained", &error);
             return;
         }
-        if !platform::confirm_dialog("Cap", "Are you sure you want to delete this recording?", "Yes", "No", false) {
+        if !platform::confirm_dialog("Bizstudio Recorder", "Are you sure you want to delete this recording?", "Yes", "No", false) {
             return;
         }
         let prepared = cx.update(|cx| {
@@ -6170,7 +6172,7 @@ pub(crate) fn request_editor_deletion(
         let result = match futures_util::future::select(&mut task, &mut notice).await {
             futures_util::future::Either::Left((result, _)) => result,
             futures_util::future::Either::Right(_) => {
-                platform::alert_dialog("Deletion is still finishing", "Cap is waiting for recording cleanup to finish before completing this deletion.");
+                platform::alert_dialog("Deletion is still finishing", "Bizstudio Recorder is waiting for recording cleanup to finish before completing this deletion.");
                 task.await
             }
         }.unwrap_or_else(|error| Err(format!("Recording deletion failed: {error}")));
@@ -6704,7 +6706,7 @@ pub fn open_screenshot_editor(path: PathBuf, cx: &mut App) {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             display_id,
             titlebar: Some(gpui::TitlebarOptions {
-                title: Some("Cap Screenshot Editor".into()),
+                title: Some("Bizstudio Recorder Screenshot Editor".into()),
                 appears_transparent: true,
                 traffic_light_position: None,
             }),
@@ -7842,16 +7844,19 @@ mod tests {
     #[test]
     fn own_window_titles_match_cap_window_id() {
         let expected = [
-            (OwnWindow::Main, "Cap"),
-            (OwnWindow::Settings, "Cap Settings"),
-            (OwnWindow::Controls, "Cap Recording Controls"),
-            (OwnWindow::Camera, "Cap Camera"),
-            (OwnWindow::ModeSelect, "Cap Mode Selection"),
-            (OwnWindow::Teleprompter, "Cap Teleprompter"),
-            (OwnWindow::TargetSelect, "Cap Target Select"),
-            (OwnWindow::Editor, "Cap Editor"),
-            (OwnWindow::ScreenshotEditor, "Cap Screenshot Editor"),
-            (OwnWindow::Onboarding, "Welcome to Cap"),
+            (OwnWindow::Main, "Bizstudio Recorder"),
+            (OwnWindow::Settings, "Bizstudio Recorder Settings"),
+            (OwnWindow::Controls, "Bizstudio Recorder Recording Controls"),
+            (OwnWindow::Camera, "Bizstudio Recorder Camera"),
+            (OwnWindow::ModeSelect, "Bizstudio Recorder Mode Selection"),
+            (OwnWindow::Teleprompter, "Bizstudio Recorder Teleprompter"),
+            (OwnWindow::TargetSelect, "Bizstudio Recorder Target Select"),
+            (OwnWindow::Editor, "Bizstudio Recorder Editor"),
+            (
+                OwnWindow::ScreenshotEditor,
+                "Bizstudio Recorder Screenshot Editor",
+            ),
+            (OwnWindow::Onboarding, "Welcome to Bizstudio Recorder"),
         ];
         assert_eq!(OwnWindow::ALL.len(), expected.len());
         for (kind, title) in expected {
@@ -7877,12 +7882,12 @@ mod tests {
         assert_eq!(
             shared,
             vec![
-                &"Cap",
-                &"Cap Settings",
-                &"Cap Recording Controls",
-                &"Cap Camera",
-                &"Cap Mode Selection",
-                &"Cap Teleprompter",
+                &"Bizstudio Recorder",
+                &"Bizstudio Recorder Settings",
+                &"Bizstudio Recorder Recording Controls",
+                &"Bizstudio Recorder Camera",
+                &"Bizstudio Recorder Mode Selection",
+                &"Bizstudio Recorder Teleprompter",
             ]
         );
 
@@ -7893,9 +7898,9 @@ mod tests {
         assert_eq!(
             defaults_without_a_window,
             vec![
-                &"Cap Window Capture Occluder",
-                &"Cap Capture Area",
-                &"Cap Recordings Overlay",
+                &"Bizstudio Recorder Window Capture Occluder",
+                &"Bizstudio Recorder Capture Area",
+                &"Bizstudio Recorder Recordings Overlay",
             ]
         );
 
@@ -7953,15 +7958,23 @@ mod tests {
     #[test]
     fn the_teleprompter_rule_is_always_present_and_never_duplicated() {
         let from_nothing = own_window_exclusion_rules(Vec::new(), RecordingMode::Instant);
-        assert_eq!(from_nothing, vec![title_rule("Cap Teleprompter")]);
+        assert_eq!(
+            from_nothing,
+            vec![title_rule("Bizstudio Recorder Teleprompter")]
+        );
         assert_eq!(
             excluded_own_windows(&from_nothing),
             vec![OwnWindow::Teleprompter]
         );
 
-        let already_configured =
-            own_window_exclusion_rules(vec![title_rule("Cap Teleprompter")], RecordingMode::Studio);
-        assert_eq!(already_configured, vec![title_rule("Cap Teleprompter")]);
+        let already_configured = own_window_exclusion_rules(
+            vec![title_rule("Bizstudio Recorder Teleprompter")],
+            RecordingMode::Studio,
+        );
+        assert_eq!(
+            already_configured,
+            vec![title_rule("Bizstudio Recorder Teleprompter")]
+        );
     }
 
     /// Our own windows are matched on title *alone*

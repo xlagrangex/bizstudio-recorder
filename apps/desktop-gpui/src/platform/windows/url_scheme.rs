@@ -94,7 +94,7 @@ fn claim_url_scheme(scheme: &str, executable: &Path) -> Result<(), String> {
     if read_user_registry_string(&command_key).as_deref() == Some(command.as_str()) {
         return Ok(());
     }
-    write_user_registry_string(&class, None, "URL:so.cap.desktop protocol")?;
+    write_user_registry_string(&class, None, "URL:it.bizstudio.recorder protocol")?;
     write_user_registry_string(&class, Some("URL Protocol"), "")?;
     write_user_registry_string(
         &format!("{class}\\DefaultIcon"),

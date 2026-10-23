@@ -288,7 +288,7 @@ impl EditorWindow {
                 let input = cx.new(|cx| {
                     let mut input = ui::TextInputState::single_line(window, cx);
                     input.set_placeholder(match field {
-                        FrameField::Url => "cap.so",
+                        FrameField::Url => "rec.bizstudio.it",
                         FrameField::Title => "Window title",
                     });
                     input
@@ -692,7 +692,7 @@ mod tests {
         ));
         let frame = project.background.frame.as_ref().unwrap();
         assert_eq!(frame.theme, FrameTheme::Dark);
-        assert_eq!(frame.url, "Cap.so");
+        assert_eq!(frame.url, "rec.bizstudio.it");
         assert_eq!(frame.title, "");
         assert!(!apply_frame_change(
             &mut project,

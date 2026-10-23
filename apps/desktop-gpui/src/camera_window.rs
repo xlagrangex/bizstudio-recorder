@@ -736,7 +736,7 @@ fn camera_issue(error: &str) -> (&'static str, &'static str) {
     if error.contains("access is unavailable") {
         return (
             "Camera access needed",
-            "Click to allow Cap to use your camera in System Settings.",
+            "Click to allow Bizstudio Recorder to use your camera in System Settings.",
         );
     }
     let message = if error.contains("DeviceNotFound") {

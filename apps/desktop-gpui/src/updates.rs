@@ -10,12 +10,15 @@ use crate::{
     store::{GeneralSettings, UpdateChannel},
 };
 
+/// The feed and signing key are upstream Cap's, so a check would offer to
+/// install official Cap over this fork; off until the fork ships its own feed.
+pub(crate) const ENABLED: bool = false;
+
 const STABLE_FIRST_CHECK_DELAY: Duration = Duration::from_secs(10);
 const NIGHTLY_FIRST_CHECK_DELAY: Duration = Duration::from_secs(60);
 const NIGHTLY_CHECK_INTERVAL: Duration = Duration::from_secs(2 * 60 * 60);
 const BUSY_RETRY_DELAY: Duration = Duration::from_secs(5 * 60);
-const BUSY_MESSAGE: &str =
-    "Finish your recording, export, upload, import, or transcription task before updating Cap.";
+const BUSY_MESSAGE: &str = "Finish your recording, export, upload, import, or transcription task before updating Bizstudio Recorder.";
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) enum UpdateStatus {
@@ -107,12 +110,8 @@ fn current_version() -> Result<Version, String> {
     Version::parse(env!("CARGO_PKG_VERSION")).map_err(|error| error.to_string())
 }
 
-// Bizstudio Recorder is a fork: the upstream feed would install official Cap
-// over it, so updates stay off until the fork publishes its own releases.
-const UPSTREAM_UPDATES_ENABLED: bool = false;
-
 async fn available_release(channel: UpdateChannel) -> Result<Option<Release>, String> {
-    if !UPSTREAM_UPDATES_ENABLED {
+    if !ENABLED {
         return Ok(None);
     }
     let current = current_version()?;
@@ -196,8 +195,8 @@ pub(crate) fn check_manually(cx: &mut App) {
             cx.spawn(async move |_| {
                 crate::platform::activate_app();
                 crate::platform::alert_dialog(
-                    "Update Cap",
-                    &format!("Cap is already getting version {version} ready."),
+                    "Update Bizstudio Recorder",
+                    &format!("Bizstudio Recorder is already getting version {version} ready."),
                 );
             })
             .detach();
@@ -263,7 +262,7 @@ fn finish_manual_check(cx: &mut App, manual: bool) {
 fn busy_alert(cx: &mut App) {
     cx.spawn(async move |_| {
         crate::platform::activate_app();
-        crate::platform::alert_dialog("Cap is busy", BUSY_MESSAGE);
+        crate::platform::alert_dialog("Bizstudio Recorder is busy", BUSY_MESSAGE);
     })
     .detach();
 }
@@ -368,7 +367,7 @@ pub(crate) fn schedule_startup_check(cx: &mut App) {
                         crate::platform::activate_app();
                         crate::platform::alert_dialog(
                             "No Update Available",
-                            "You're already using the latest version of Cap.",
+                            "You're already using the latest version of Bizstudio Recorder.",
                         );
                         cx.update(|cx| finish_manual_check(cx, true));
                     }
@@ -379,7 +378,7 @@ pub(crate) fn schedule_startup_check(cx: &mut App) {
                     if manual {
                         crate::platform::activate_app();
                         crate::platform::alert_dialog(
-                            "Update Cap",
+                            "Update Bizstudio Recorder",
                             &format!("Couldn't check for updates: {error}"),
                         );
                         cx.update(|cx| finish_manual_check(cx, true));
@@ -418,9 +417,9 @@ pub(crate) fn schedule_startup_check(cx: &mut App) {
 
             crate::platform::activate_app();
             let accepted = crate::platform::confirm_dialog(
-                "Update Cap",
+                "Update Bizstudio Recorder",
                 &format!(
-                    "Version {} of Cap is available. Cap will download it in the background and let you know when it's ready to install.",
+                    "Version {} of Bizstudio Recorder is available. Bizstudio Recorder will download it in the background and let you know when it's ready to install.",
                     release.version
                 ),
                 "Download",
@@ -526,11 +525,10 @@ fn start_download(release: Release, cx: &mut App) {
 
 fn update_failed(message: &str, cx: &mut App) {
     set_status(UpdateStatus::Idle, cx);
-    let message =
-        format!("{message}\n\nYou can always download the latest version from cap.so/download.");
+    let message = message.to_string();
     cx.spawn(async move |_| {
         crate::platform::activate_app();
-        crate::platform::alert_dialog("Update Cap", &message);
+        crate::platform::alert_dialog("Update Bizstudio Recorder", &message);
     })
     .detach();
 }
@@ -553,8 +551,8 @@ fn prompt_restart(cx: &mut App) {
     cx.spawn(async move |cx| {
         crate::platform::activate_app();
         if crate::platform::confirm_dialog(
-            "Update Cap",
-            &format!("Cap {version} is ready. Restart Cap to finish updating."),
+            "Update Bizstudio Recorder",
+            &format!("Bizstudio Recorder {version} is ready. Restart Bizstudio Recorder to finish updating."),
             "Restart Now",
             "Later",
             false,
@@ -582,7 +580,7 @@ pub(crate) fn install_and_relaunch(cx: &mut App) {
     }
     if let Err(error) = crate::app_windows::flush_pending_editor_saves(cx) {
         cx.spawn(async move |_| {
-            crate::platform::alert_dialog("Cap is still open", &error);
+            crate::platform::alert_dialog("Bizstudio Recorder is still open", &error);
         })
         .detach();
         return;
@@ -683,7 +681,9 @@ fn apply_package(
     let bundle = executable
         .ancestors()
         .find(|path| path.extension().is_some_and(|extension| extension == "app"))
-        .ok_or_else(|| "This copy of Cap isn't running from an app bundle".to_string())?;
+        .ok_or_else(|| {
+            "This copy of Bizstudio Recorder isn't running from an app bundle".to_string()
+        })?;
     installer::install_app_bundle(package, bundle)?;
     Ok(Some(executable))
 }
@@ -710,7 +710,9 @@ fn apply_package(package: &std::path::Path, kind: ArtifactKind) -> Result<Option
             let image = std::env::var_os("APPIMAGE")
                 .map(PathBuf::from)
                 .filter(|path| path.is_absolute())
-                .ok_or_else(|| "This copy of Cap isn't running from an AppImage".to_string())?;
+                .ok_or_else(|| {
+                    "This copy of Bizstudio Recorder isn't running from an AppImage".to_string()
+                })?;
             installer::install_appimage(package, &image)?;
             Ok(Some(image))
         }

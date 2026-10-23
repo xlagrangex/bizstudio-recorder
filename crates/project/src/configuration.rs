@@ -284,7 +284,7 @@ impl Default for FrameConfiguration {
         Self {
             style: FrameStyle::None,
             theme: FrameTheme::default(),
-            url: "Cap.so".to_string(),
+            url: "rec.bizstudio.it".to_string(),
             title: String::new(),
         }
     }

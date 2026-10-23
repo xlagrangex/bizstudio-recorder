@@ -1701,7 +1701,7 @@ impl MainWindow {
         };
         if !recover
             && !crate::platform::confirm_dialog(
-                "Cap",
+                "Bizstudio Recorder",
                 "Are you sure you want to delete this recording?",
                 "Yes",
                 "No",
@@ -2500,7 +2500,7 @@ impl MainWindow {
             }
             let available = storage.available_bytes as f64 / 1_073_741_824.0;
             let detail = if can_start {
-                format!("Only {available:.2} GB is available on your recording drive. Cap will stop automatically if storage gets too low, preserving your recording.")
+                format!("Only {available:.2} GB is available on your recording drive. Bizstudio Recorder will stop automatically if storage gets too low, preserving your recording.")
             } else {
                 format!("Only {available:.2} GB is available on your recording drive. Free up space so at least 512 MB is available before recording.")
             };
@@ -3062,7 +3062,7 @@ impl MainWindow {
             .filter(|_| !pending);
 
         let message = if pending {
-            "Finish signing in to Cap in your browser. Cap comes back here and opens the recorder when you're done."
+            "Finish signing in to Bizstudio Recorder in your browser. Bizstudio Recorder comes back here and opens the recorder when you're done."
         } else {
             "Instant Mode uploads while you record, so your shareable link is ready the moment you stop."
         };
@@ -3533,7 +3533,6 @@ impl MainWindow {
                 "screenshots" => "Screenshots",
                 "recordings" => "Recordings",
                 "teleprompter" => "Teleprompter",
-                "changelog" => "Changelog",
                 _ => unreachable!(),
             };
             div()
@@ -3635,15 +3634,6 @@ impl MainWindow {
                                 cx.defer(app_windows::open_teleprompter);
                             }),
                         ),
-                    )
-                    .child(
-                        icon_button("changelog", "icons/bell.svg", 16.).on_click(cx.listener(
-                            |_, _, _window, cx| {
-                                cx.defer(|cx: &mut gpui::App| {
-                                    app_windows::open_settings(Page::Changelog, cx)
-                                });
-                            },
-                        )),
                     ),
             );
 
@@ -3847,7 +3837,7 @@ impl MainWindow {
                         .flex_col()
                         .gap(px(8.))
                         .text_size(px(12.))
-                        .child("Recording paused. Cap will hide before resuming.")
+                        .child("Recording paused. Bizstudio Recorder will hide before resuming.")
                         .child(
                             div()
                                 .id("resume-clean-recording")
@@ -4950,7 +4940,7 @@ impl MainWindow {
     ) {
         cx.spawn_in(window, async move |this, cx| {
             if !crate::platform::confirm_dialog(
-                "Cap",
+                "Bizstudio Recorder",
                 "Are you sure you want to delete this recording?",
                 "Yes",
                 "No",
@@ -4984,7 +4974,7 @@ impl MainWindow {
     ) {
         cx.spawn_in(window, async move |this, cx| {
             if !crate::platform::confirm_dialog(
-                "Cap",
+                "Bizstudio Recorder",
                 "Are you sure you want to delete this screenshot?",
                 "Yes",
                 "No",
@@ -5862,11 +5852,11 @@ impl MainWindow {
             DeviceMenu::Microphone => "microphone",
         };
         let message = if denied {
-            format!("Cap can't use your {noun}. Turn it on in System Settings.")
+            format!("Bizstudio Recorder can't use your {noun}. Turn it on in System Settings.")
         } else if requesting {
             "Choose Allow in the macOS prompt.".to_string()
         } else {
-            format!("Cap needs your OK to use your {noun}.")
+            format!("Bizstudio Recorder needs your OK to use your {noun}.")
         };
         let label = if denied {
             "Open System Settings"
@@ -6032,7 +6022,9 @@ impl MainWindow {
                     .gap(px(4.))
                     .when(!recording_clip, |this| {
                         this.child(self.render_logo())
-                            .child(self.render_plan_badge())
+                            .when(self.plan != PlanBadge::Personal, |this| {
+                                this.child(self.render_plan_badge())
+                            })
                     })
                     .when(recording_clip, |this| {
                         this.child(
@@ -6109,11 +6101,11 @@ impl MainWindow {
 
     /// This goes through `img()`, not `svg()`. The two take different paths in
     /// gpui: `svg()` keeps only the alpha and tints it with one colour, which
-    /// would flatten the badge, the three blue rings and the wordmark into a
+    /// would flatten the mascot (an embedded PNG) and the wordmark into a
     /// single silhouette, whereas `img()` rasterises through resvg and keeps
     /// the colour. `img()` also renders at `SMOOTH_SVG_SCALE_FACTOR` (2x), so
-    /// the 103px-wide source becomes a 206px raster -- more than the 168 device
-    /// pixels an 84px lockup needs on a 2x display.
+    /// the 129px-wide source becomes a 258px raster -- more than the device
+    /// pixels a 30px-tall lockup needs on a 2x display.
     ///
     /// The app ships two files rather than recolouring one, so this picks the
     /// same way it does.
@@ -6123,8 +6115,8 @@ impl MainWindow {
         } else {
             "icons/logo-full.svg"
         })
-        .w(px(84.))
-        .h(px(84. * 40. / 103.))
+        .w(px(30. * 129. / 40.))
+        .h(px(30.))
         .flex_shrink_0()
     }
 

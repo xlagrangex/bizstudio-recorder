@@ -2061,7 +2061,7 @@ async fn pick_existing_recording_path(_cx: &mut gpui::AsyncWindowContext) -> Opt
     #[cfg(target_os = "linux")]
     {
         crate::platform::open_file_panel_async(
-            &[("Cap Recording", &["cap"])],
+            &[("Bizstudio Recording", &["cap"])],
             Some(crate::recording::recordings_dir()),
             _cx,
         )
@@ -2071,7 +2071,7 @@ async fn pick_existing_recording_path(_cx: &mut gpui::AsyncWindowContext) -> Opt
     {
         rfd::FileDialog::new()
             .set_directory(crate::recording::recordings_dir())
-            .add_filter("Cap Recording", &["cap"])
+            .add_filter("Bizstudio Recording", &["cap"])
             .pick_file()
     }
 }
@@ -3292,7 +3292,7 @@ pub(crate) fn append_cap_project_to_editor(
         return Err("Cannot import a recording into itself".to_string());
     }
     if !is_cap_project_path(source_path) {
-        return Err("Select a Cap project folder".to_string());
+        return Err("Select a Bizstudio Recorder project folder".to_string());
     }
 
     let source_meta = RecordingMeta::load_for_project(source_path)
@@ -3303,17 +3303,17 @@ pub(crate) fn append_cap_project_to_editor(
     };
     match source_studio_meta.status() {
         StudioRecordingStatus::InProgress => {
-            return Err("Source Cap project is still recording".to_string());
+            return Err("Source Bizstudio Recorder project is still recording".to_string());
         }
         StudioRecordingStatus::Failed { error } => {
-            return Err(format!("Source Cap project failed: {error}"));
+            return Err(format!("Source Bizstudio Recorder project failed: {error}"));
         }
         StudioRecordingStatus::Complete | StudioRecordingStatus::NeedsRemux => {}
     }
 
     let source_segments = studio_segments_for_import(source_studio_meta);
     if source_segments.is_empty() {
-        return Err("Source Cap project has no recording segments".to_string());
+        return Err("Source Bizstudio Recorder project has no recording segments".to_string());
     }
 
     let source_timeline = source_timeline_segments_for_import(&source_meta, &source_segments)?;
@@ -3379,7 +3379,9 @@ pub(crate) fn append_cap_project_to_editor(
     };
 
     if copied_segments.is_empty() {
-        return Err("Source Cap project has no importable recording segments".to_string());
+        return Err(
+            "Source Bizstudio Recorder project has no importable recording segments".to_string(),
+        );
     }
 
     {

@@ -31,7 +31,7 @@ impl LinuxFileDialogError {
         match self {
             Self::Busy => "A file dialog is already open. Finish or cancel it before trying again.".into(),
             Self::BeforeDispatch(error) | Self::NativeResponse(error) => format!("The file dialog could not complete: {error}"),
-            Self::Indeterminate(_) | Self::RestartRequired => "Cap could not confirm that the file dialog closed. Close any remaining file dialog and restart Cap before trying again.".into(),
+            Self::Indeterminate(_) | Self::RestartRequired => "Bizstudio Recorder could not confirm that the file dialog closed. Close any remaining file dialog and restart Bizstudio Recorder before trying again.".into(),
         }
     }
 }
@@ -1678,7 +1678,7 @@ mod mac {
         unsafe {
             let mut image: Option<Id<AnyObject>> = None;
 
-            let cap_app = NSString::from_str("/Applications/Cap.app");
+            let cap_app = NSString::from_str("/Applications/Bizstudio Recorder.app");
             let exists: bool = {
                 let manager: *mut AnyObject = msg_send![class!(NSFileManager), defaultManager];
                 !manager.is_null() && msg_send![manager, fileExistsAtPath: &*cap_app]
@@ -3039,7 +3039,7 @@ mod file_dialog_tests {
         assert!(
             LinuxFileDialogError::RestartRequired
                 .message()
-                .contains("restart Cap")
+                .contains("restart Bizstudio Recorder")
         );
     }
 

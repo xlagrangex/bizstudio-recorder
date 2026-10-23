@@ -83,14 +83,14 @@ pub fn is_parakeet_model(model: &str) -> bool {
     matches!(model, "best" | "best-max")
 }
 
-/// Tauri's `appLocalDataDir()` for the `so.cap.desktop` identifier: on macOS
+/// Tauri's `appLocalDataDir()` for the app identifier: on macOS
 /// `~/Library/Application Support`, on Windows `%LOCALAPPDATA%` (deliberately
 /// *not* the roaming dir [`store::app_data_dir`] uses), on Linux
 /// `$XDG_DATA_HOME`/`~/.local/share`.
 fn app_local_data_dir() -> PathBuf {
     dirs::data_local_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("so.cap.desktop")
+        .join(crate::store::APP_IDENTIFIER)
 }
 
 pub fn models_dir() -> PathBuf {
@@ -1374,7 +1374,7 @@ fn transcription_hints() -> Vec<String> {
             .map(str::to_string)
             .collect(),
         None => vec![
-            "Cap".to_string(),
+            "Bizstudio".to_string(),
             "TypeScript".to_string(),
             "My Brand Name".to_string(),
             "mywebsite.com".to_string(),
@@ -2572,7 +2572,7 @@ mod tests {
     #[test]
     fn model_paths_match_the_tauri_layout() {
         let base = models_dir();
-        assert!(base.ends_with("so.cap.desktop/transcription_models"));
+        assert!(base.ends_with("it.bizstudio.recorder/transcription_models"));
         assert_eq!(model_path("best"), base.join("parakeet-best"));
         assert_eq!(model_path("best-max"), base.join("parakeet-best-max"));
         assert_eq!(model_path("small"), base.join("small.bin"));

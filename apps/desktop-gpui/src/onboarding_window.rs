@@ -224,18 +224,14 @@ const MODES: [ModeDetail; 3] = [
     },
 ];
 
-const FAQ: [(&str, &str); 5] = [
-    (
-        "Is Cap free to use?",
-        "Cap is free for personal use. For teams and commercial use, check out our pricing plans.",
-    ),
+const FAQ: [(&str, &str); 4] = [
     (
         "What's the difference between Instant and Studio?",
         "Instant mode uploads as you record — stop recording and you'll have a shareable link immediately. Studio mode records locally in full quality, letting you edit with backgrounds, effects, and more before sharing.",
     ),
     (
         "Where are my recordings stored?",
-        "All recordings are stored locally on your computer. In Instant mode, they're also uploaded to Cap's cloud for easy sharing. You can manage storage in Settings.",
+        "All recordings are stored locally on your computer. In Instant mode, they're also uploaded to your Bizstudio server for easy sharing. You can manage storage in Settings.",
     ),
     (
         "Can I change my shortcuts later?",
@@ -243,7 +239,7 @@ const FAQ: [(&str, &str); 5] = [
     ),
     (
         "How does sharing work?",
-        "In Instant mode, you get a shareable link automatically when you stop recording. In Studio mode, export your edited video and share via Cap's cloud or save locally.",
+        "In Instant mode, you get a shareable link automatically when you stop recording. In Studio mode, export your edited video and share via your Bizstudio server or save locally.",
     ),
 ];
 
@@ -1341,7 +1337,7 @@ impl OnboardingWindow {
     fn render_overview(&self) -> AnyElement {
         let theme = self.theme;
         div().flex().flex_col().items_center().justify_center().min_h_full().px(px(40.)).gap(px(32.))
-            .child(self.heading("One app, every workflow", "Whether you need speed, studio quality, or a quick screenshot — Cap has a mode for it."))
+            .child(self.heading("One app, every workflow", "Whether you need speed, studio quality, or a quick screenshot — Bizstudio Recorder has a mode for it."))
             .child(div().flex().gap(px(16.)).w_full().max_w(px(540.)).children(MODES.iter().enumerate().map(|(index, mode)| {
                 let paper = stage::Paper::new(&theme);
                 let card = self.paper_card().flex_1().min_w_0().flex().flex_col().items_center().gap(px(10.)).px(px(20.)).pt(px(22.)).pb(px(24.))
@@ -1460,7 +1456,7 @@ impl OnboardingWindow {
             .gap(px(32.))
             .child(self.heading(
                 "Switch modes anytime",
-                "Toggle between modes with a single click from the main Cap window.",
+                "Toggle between modes with a single click from the main Bizstudio Recorder window.",
             ))
             .child(
                 div()
@@ -1539,11 +1535,10 @@ impl OnboardingWindow {
     fn render_shortcuts(&self) -> AnyElement {
         let theme = self.theme;
         div().flex().flex_col().items_center().justify_center().min_h_full().px(px(48.)).gap(px(24.))
-            .child(self.heading("Make Cap yours", "Customize everything from keyboard shortcuts to storage. Cap adapts to your workflow."))
+            .child(self.heading("Make Bizstudio Recorder yours", "Customize everything from keyboard shortcuts to storage. Bizstudio Recorder adapts to your workflow."))
             .child(div().flex().flex_col().w_full().max_w(px(420.)).gap(px(8.)).children([
                 ("Keyboard Shortcuts", "Global hotkeys for recording, screenshots, and switching modes"),
                 ("Custom S3 Storage", "Connect your own S3-compatible bucket for full control over your recordings"),
-                ("Custom Domain", "Use your own domain for shareable links instead of cap.so"),
                 ("Recording Preferences", "FPS, quality, countdown timer, cursor effects, and more"),
             ].into_iter().map(|(title, description)| {
                 self.paper_card().rounded(px(16.)).px(px(18.)).py(px(13.)).flex().flex_col().gap(px(4.))
@@ -1611,32 +1606,12 @@ impl OnboardingWindow {
                             )
                             .when(open, |el| {
                                 el.child(
-                                    div()
-                                        .px(px(20.))
-                                        .pb(px(16.))
-                                        .child(
-                                            copy(*answer, 13., theme.gray_10).line_height(px(20.)),
-                                        )
-                                        .when(index == 0, |el| {
-                                            el.child(
-                                                copy("View pricing plans", 13., theme.blue_10)
-                                                    .id("onboarding-faq-pricing")
-                                                    .cursor_pointer()
-                                                    .mt(px(8.))
-                                                    .on_click(|_, _, cx| {
-                                                        cx.open_url(crate::auth::PRICING_URL)
-                                                    }),
-                                            )
-                                        }),
+                                    div().px(px(20.)).pb(px(16.)).child(
+                                        copy(*answer, 13., theme.gray_10).line_height(px(20.)),
+                                    ),
                                 )
                             })
                     })),
-            )
-            .child(
-                copy("View pricing plans ↗", 13., theme.blue_10)
-                    .id("onboarding-pricing")
-                    .cursor_pointer()
-                    .on_click(|_, _, cx| cx.open_url(crate::auth::PRICING_URL)),
             )
             .into_any_element()
     }
@@ -1654,11 +1629,11 @@ impl OnboardingWindow {
         let last = self.permissions_only || self.step == Step::Faq;
         let relaunch = self.step == Step::Permissions && !disabled && self.needs_relaunch();
         let label = if relaunch {
-            "Relaunch Cap"
+            "Relaunch Bizstudio Recorder"
         } else if self.permissions_only {
-            "Continue to Cap"
+            "Continue to Bizstudio Recorder"
         } else if last {
-            "Start Using Cap"
+            "Start Using Bizstudio Recorder"
         } else {
             "Continue"
         };
@@ -2085,7 +2060,7 @@ impl OnboardingWindow {
                     .rounded(px(8.))
                     .bg(theme.body_fill(3))
                     .child(
-                        copy("cap.so/s/m4k92x", 11., theme.gray_11)
+                        copy("rec.bizstudio.it/s/m4k92x", 11., theme.gray_11)
                             .flex_1()
                             .min_w_0(),
                     )
@@ -2205,7 +2180,7 @@ impl OnboardingWindow {
                             .items_center()
                             .gap(px(8.))
                             .child(self.demo_window_dots())
-                            .child(copy("Cap Editor", 10., theme.gray_11)),
+                            .child(copy("Bizstudio Recorder Editor", 10., theme.gray_11)),
                     )
                     .child(
                         copy("Export", 9., gpui::white())

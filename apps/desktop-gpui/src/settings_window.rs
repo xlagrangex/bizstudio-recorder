@@ -175,6 +175,12 @@ impl Page {
     pub fn from_slug(slug: &str) -> Option<Self> {
         Self::ALL.iter().copied().find(|page| page.slug() == slug)
     }
+
+    /// Plans, licensing and the changelog are upstream Cap's; the self-hosted
+    /// server grants every account Pro.
+    fn listed(self) -> bool {
+        !matches!(self, Self::License | Self::Changelog)
+    }
 }
 
 /// A popup list standing in for the native `Menu.popup()` the selects use.
@@ -1060,7 +1066,7 @@ impl SettingsWindow {
     fn delete_recording(&mut self, path: PathBuf, window: &mut Window, cx: &mut Context<Self>) {
         cx.spawn_in(window, async move |this, cx| {
             let confirmed = crate::platform::confirm_dialog(
-                "Cap",
+                "Bizstudio Recorder",
                 "Are you sure you want to delete this recording?",
                 "Yes",
                 "No",
@@ -1186,7 +1192,7 @@ impl SettingsWindow {
     fn delete_screenshot(&mut self, path: PathBuf, window: &mut Window, cx: &mut Context<Self>) {
         cx.spawn_in(window, async move |this, cx| {
             let confirmed = crate::platform::confirm_dialog(
-                "Cap",
+                "Bizstudio Recorder",
                 "Are you sure you want to delete this screenshot?",
                 "Yes",
                 "No",
@@ -1797,52 +1803,58 @@ impl SettingsWindow {
             .flex_1()
             .min_h_0()
             .overflow_y_scroll()
-            .children(Page::ALL.iter().copied().map(|page| {
-                let selected = page == self.page;
-                div()
-                    .id(SharedString::from(page.slug()))
-                    .when(self.keyboard_nav, ui::keyboard_nav::stop)
-                    .role(gpui::Role::Tab)
-                    .aria_label(page.label())
-                    .aria_selected(selected)
-                    .flex()
-                    .flex_row()
-                    .items_center()
-                    // `.cap-settings-nav-item { height: 32px; padding: 6px;
-                    //  border-radius: 8px }`, `gap-1.5 text-[13px]`.
-                    .h(px(30.))
-                    .px(px(6.))
-                    .gap(px(8.))
-                    .rounded(px(8.))
-                    .text_size(px(13.))
-                    .when(selected, |this| {
-                        this.bg(Theme::with_alpha(
-                            rgb(Theme::SETTINGS_ACCENT),
-                            if theme.is_dark() { 0.22 } else { 0.12 },
-                        ))
-                        .font_weight(FontWeight::MEDIUM)
-                    })
-                    .when(!selected, |this| {
-                        this.hover(|style| style.bg(theme.settings_hover()))
-                    })
-                    .child(
-                        svg()
-                            .path(page.icon())
-                            .size(px(16.))
-                            .flex_shrink_0()
-                            .text_color(if selected {
-                                rgb(Theme::SETTINGS_ACCENT).into()
-                            } else {
-                                theme.settings_muted()
-                            }),
-                    )
-                    .child(page.label())
-                    .on_click(cx.listener(move |this, _, window, cx| {
-                        // Navigating *is* a remount in the Solid router, so the
-                        // new page's query runs -- `set_page` carries that.
-                        this.set_page(page, window, cx);
-                    }))
-            }))
+            .children(
+                Page::ALL
+                    .iter()
+                    .copied()
+                    .filter(|page| page.listed())
+                    .map(|page| {
+                        let selected = page == self.page;
+                        div()
+                            .id(SharedString::from(page.slug()))
+                            .when(self.keyboard_nav, ui::keyboard_nav::stop)
+                            .role(gpui::Role::Tab)
+                            .aria_label(page.label())
+                            .aria_selected(selected)
+                            .flex()
+                            .flex_row()
+                            .items_center()
+                            // `.cap-settings-nav-item { height: 32px; padding: 6px;
+                            //  border-radius: 8px }`, `gap-1.5 text-[13px]`.
+                            .h(px(30.))
+                            .px(px(6.))
+                            .gap(px(8.))
+                            .rounded(px(8.))
+                            .text_size(px(13.))
+                            .when(selected, |this| {
+                                this.bg(Theme::with_alpha(
+                                    rgb(Theme::SETTINGS_ACCENT),
+                                    if theme.is_dark() { 0.22 } else { 0.12 },
+                                ))
+                                .font_weight(FontWeight::MEDIUM)
+                            })
+                            .when(!selected, |this| {
+                                this.hover(|style| style.bg(theme.settings_hover()))
+                            })
+                            .child(
+                                svg()
+                                    .path(page.icon())
+                                    .size(px(16.))
+                                    .flex_shrink_0()
+                                    .text_color(if selected {
+                                        rgb(Theme::SETTINGS_ACCENT).into()
+                                    } else {
+                                        theme.settings_muted()
+                                    }),
+                            )
+                            .child(page.label())
+                            .on_click(cx.listener(move |this, _, window, cx| {
+                                // Navigating *is* a remount in the Solid router, so the
+                                // new page's query runs -- `set_page` carries that.
+                                this.set_page(page, window, cx);
+                            }))
+                    }),
+            )
     }
 
     fn render_account(&self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -1887,30 +1899,25 @@ impl SettingsWindow {
                     .rounded(px(4.))
                     .child(format!("v{}", env!("CARGO_PKG_VERSION"))),
             )
-            .child(
-                div()
-                    .id("settings-previous-versions")
-                    .child("View previous versions")
-                    .hover(|style| style.text_color(theme.settings_text()))
-                    .on_click(|_, _, cx| cx.open_url("https://cap.so/download/versions")),
-            )
-            .child(
-                div()
-                    .id("settings-check-updates")
-                    .cursor_pointer()
-                    .when(update_ready, |link| {
-                        link.text_color(rgb(Theme::SETTINGS_ACCENT))
-                    })
-                    .hover(|style| style.text_color(theme.settings_text()))
-                    .on_click(cx.listener(move |_, _, _, cx| {
-                        if update_ready {
-                            crate::updates::install_and_relaunch(cx);
-                        } else {
-                            crate::updates::check_manually(cx);
-                        }
-                    }))
-                    .child(update_label),
-            );
+            .when(crate::updates::ENABLED, |links| {
+                links.child(
+                    div()
+                        .id("settings-check-updates")
+                        .cursor_pointer()
+                        .when(update_ready, |link| {
+                            link.text_color(rgb(Theme::SETTINGS_ACCENT))
+                        })
+                        .hover(|style| style.text_color(theme.settings_text()))
+                        .on_click(cx.listener(move |_, _, _, cx| {
+                            if update_ready {
+                                crate::updates::install_and_relaunch(cx);
+                            } else {
+                                crate::updates::check_manually(cx);
+                            }
+                        }))
+                        .child(update_label),
+                )
+            });
 
         div()
             .flex()
@@ -2967,17 +2974,22 @@ impl SettingsWindow {
     // -- The General page --------------------------------------------------
 
     fn render_general(&self, window: &Window, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
-        vec![
+        let mut sections = vec![
             self.render_appearance(cx).into_any_element(),
             self.render_app_section(cx).into_any_element(),
             self.render_recording(cx).into_any_element(),
             self.render_storage(cx).into_any_element(),
             self.render_project_name(window, cx).into_any_element(),
             self.render_excluded_windows(cx).into_any_element(),
-            self.render_updates(cx).into_any_element(),
+        ];
+        if crate::updates::ENABLED {
+            sections.push(self.render_updates(cx).into_any_element());
+        }
+        sections.extend([
             self.render_self_host(window, cx).into_any_element(),
             self.render_privacy(cx).into_any_element(),
-        ]
+        ]);
+        sections
     }
 
     /// `AppearanceSection` -- `theme`.
@@ -3048,7 +3060,7 @@ impl SettingsWindow {
 
         self.section(
             "Appearance",
-            Some("Match Cap to your system theme or pick a fixed look."),
+            Some("Match Bizstudio Recorder to your system theme or pick a fixed look."),
             None,
             vec![self.card(true).child(tiles).into_any_element()],
         )
@@ -3058,13 +3070,13 @@ impl SettingsWindow {
     fn render_app_section(&self, cx: &mut Context<Self>) -> impl IntoElement {
         self.section(
             "App",
-            Some("Choose how Cap shows up on your system."),
+            Some("Choose how Bizstudio Recorder shows up on your system."),
             None,
             vec![
                 self.rows(vec![
                     self.setting_row(
                         "Always show dock icon",
-                        Some("Keep Cap in the dock even when no windows are open."),
+                        Some("Keep Bizstudio Recorder in the dock even when no windows are open."),
                         // The row is the *inverse* of the stored key.
                         self.toggle(
                             "hide-dock-icon",
@@ -3088,7 +3100,7 @@ impl SettingsWindow {
                         "System notifications",
                         Some(
                             "Show notifications for clipboard copies, saved files, and more. \
-                             You may need to allow Cap in your system's notification settings.",
+                             You may need to allow Bizstudio Recorder in your system's notification settings.",
                         ),
                         self.toggle(
                             "enable-notifications",
@@ -3198,7 +3210,7 @@ impl SettingsWindow {
         let description = if self.has_cap_pro {
             summary.to_string()
         } else {
-            "720p on the free plan. Cap Pro records up to 4K.".to_string()
+            "720p on the free plan. Pro records up to 4K.".to_string()
         };
 
         let options = INSTANT_RESOLUTION_TIERS
@@ -3504,7 +3516,7 @@ impl SettingsWindow {
                     ),
                     self.setting_row(
                         "Delete Instant recordings after upload",
-                        Some("Cap removes the local file once it has uploaded successfully."),
+                        Some("Bizstudio Recorder removes the local file once it has uploaded successfully."),
                         self.toggle(
                             "delete-after-upload",
                             "Delete Instant recordings after upload",
@@ -3713,7 +3725,7 @@ impl SettingsWindow {
 
         self.section(
             "Storage",
-            Some("Where Cap saves your recordings."),
+            Some("Where Bizstudio Recorder saves your recordings."),
             None,
             vec![
                 self.card(true)
@@ -4093,7 +4105,9 @@ impl SettingsWindow {
                                 div()
                                     .text_size(px(12.))
                                     .font_weight(FontWeight::MEDIUM)
-                                    .child("Recommended Cap windows are not excluded"),
+                                    .child(
+                                        "Recommended Bizstudio Recorder windows are not excluded",
+                                    ),
                             )
                             .child(div().text_size(px(10.)).line_height(px(14.)).child(format!(
                                 "Camera, settings, or recording windows can appear as black \
@@ -4156,7 +4170,9 @@ impl SettingsWindow {
                                     .text_size(px(12.))
                                     .line_height(px(16.))
                                     .text_color(theme.settings_muted())
-                                    .child("Which release channel Cap updates from."),
+                                    .child(
+                                        "Which release channel Bizstudio Recorder updates from.",
+                                    ),
                             ),
                     )
                     .child(self.segmented::<UpdateChannel>(
@@ -4195,7 +4211,7 @@ impl SettingsWindow {
 
         self.section(
             "Updates",
-            Some("Choose which Cap builds you receive."),
+            Some("Choose which Bizstudio Recorder builds you receive."),
             None,
             vec![self.card(false).child(body).into_any_element()],
         )
@@ -4215,7 +4231,7 @@ impl SettingsWindow {
                     .flex()
                     .flex_col()
                     .gap(px(6.))
-                    .child(div().text_size(px(13.)).child("Cap Server URL"))
+                    .child(div().text_size(px(13.)).child("Server URL"))
                     .child(self.text_field(Field::ServerUrl, cx)),
             )
             .child(
@@ -4257,7 +4273,7 @@ impl SettingsWindow {
 
         self.section(
             "Self-host",
-            Some("Only change this if you are running your own instance of Cap Web."),
+            Some("Only change this if you are running your own Bizstudio Recorder server."),
             None,
             vec![self.card(true).child(body).into_any_element()],
         )
@@ -4306,7 +4322,7 @@ impl SettingsWindow {
                     self.setting_row(
                         "Share anonymous telemetry",
                         Some(
-                            "Cap uses anonymous telemetry to improve reliability and fix bugs. We \
+                            "Bizstudio Recorder uses anonymous telemetry to improve reliability and fix bugs. We \
                          never collect recording contents, window titles, file paths, or \
                          personal information.",
                         ),

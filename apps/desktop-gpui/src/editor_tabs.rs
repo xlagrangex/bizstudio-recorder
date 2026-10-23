@@ -2655,7 +2655,7 @@ impl EditorWindow {
                             .text_size(px(12.))
                             .text_color(Hsla::from(theme.gray_10))
                             .child(download_message.unwrap_or_else(|| {
-                                "Keep Cap open while the model downloads. Editor reloads will \
+                                "Keep Bizstudio Recorder open while the model downloads. Editor reloads will \
                                  reconnect automatically."
                                     .to_string()
                             })),
@@ -2786,7 +2786,7 @@ impl EditorWindow {
                                         .text_size(px(12.))
                                         .text_color(Hsla::from(theme.gray_10))
                                         .child(
-                                            "This is the first version of captions in Cap. \
+                                            "This is the first version of captions in Bizstudio Recorder. \
                                                  Active word highlighting may be inaccurate in \
                                                  some situations. We're working on a fix for this \
                                                  and it will be released in upcoming versions.",
@@ -3316,7 +3316,7 @@ impl EditorWindow {
                                 .text_size(px(12.))
                                 .text_color(Hsla::from(theme.editor.text_3))
                                 .child(
-                                    "Cap calculated these offsets automatically to keep audio in \
+                                    "Bizstudio Recorder calculated these offsets automatically to keep audio in \
                                      sync with the video. Adjust them if anything still sounds \
                                      off.",
                                 )

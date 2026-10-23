@@ -27,7 +27,7 @@ fingerprint() {
 
 APP_PID=""
 
-SHARED_DIR="$HOME/Library/Application Support/so.cap.desktop"
+SHARED_DIR="$HOME/Library/Application Support/it.bizstudio.recorder"
 
 # Launching unconditionally would put this app on screen next to the classic
 # one every session: under the experimental switch the two share ownership of

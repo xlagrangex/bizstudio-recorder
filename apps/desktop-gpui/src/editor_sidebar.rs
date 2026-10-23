@@ -509,7 +509,7 @@ fn wallpaper_dir_from(
         .map(|directory| directory.join("assets/backgrounds"))
         .collect::<Vec<_>>();
     candidates.push(PathBuf::from(
-        "/Applications/Cap.app/Contents/Resources/assets/backgrounds",
+        "/Applications/Bizstudio Recorder.app/Contents/Resources/assets/backgrounds",
     ));
     candidates.push(
         manifest

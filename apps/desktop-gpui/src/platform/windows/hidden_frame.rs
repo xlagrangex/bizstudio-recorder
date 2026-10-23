@@ -94,7 +94,10 @@ fn reconcile(hwnd: HWND) -> io::Result<()> {
 
 fn report(result: io::Result<()>) {
     if let Err(error) = result {
-        let _ = writeln!(io::stderr().lock(), "Cap Main frame policy: {error}");
+        let _ = writeln!(
+            io::stderr().lock(),
+            "Bizstudio Recorder Main frame policy: {error}"
+        );
     }
 }
 

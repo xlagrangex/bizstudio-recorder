@@ -437,8 +437,9 @@ pub fn find_incomplete_recordings() -> Vec<IncompleteRecordingItem> {
 }
 
 fn is_recording_after_recovery_cutoff(pretty_name: &str, sort_time_millis: f64) -> bool {
-    let Some(date) = pretty_name
-        .strip_prefix("Cap ")
+    let Some(date) = ["Bizstudio ", "Cap "]
+        .iter()
+        .find_map(|prefix| pretty_name.strip_prefix(prefix))
         .and_then(|name| name.split(" at ").next())
         .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
         .or_else(|| {
@@ -890,8 +891,7 @@ fn drain_decode_jobs<J, R>(
 
 /// Where the shared downscaled-thumbnail cache lives: the OS cache dir under
 /// this app's own identifier (cache data is regenerable, so it belongs where
-/// backups and migration skip it), not the `so.cap.desktop` app-data dir both
-/// apps share.
+/// backups and migration skip it), not the app-data dir.
 fn thumbnail_cache_dir() -> PathBuf {
     // Verification runs point CAP_GPUI_APP_DATA_DIR at a sandbox; a cache that
     // still wrote to the user's real one would leak state across runs.
@@ -900,7 +900,10 @@ fn thumbnail_cache_dir() -> PathBuf {
     }
     dirs::cache_dir().map_or_else(
         || crate::store::app_data_dir().join("thumbnail-cache"),
-        |base| base.join("so.cap.desktop.gpui").join("thumbnails"),
+        |base| {
+            base.join(format!("{}.gpui", crate::store::APP_IDENTIFIER))
+                .join("thumbnails")
+        },
     )
 }
 
@@ -1982,6 +1985,20 @@ mod tests {
     }
 
     #[test]
+    fn recovery_cutoff_reads_both_recording_name_prefixes() {
+        for prefix in ["Bizstudio", "Cap"] {
+            assert!(is_recording_after_recovery_cutoff(
+                &format!("{prefix} 2026-01-02 at 10.00.00"),
+                0.0
+            ));
+            assert!(!is_recording_after_recovery_cutoff(
+                &format!("{prefix} 2025-12-31 at 10.00.00"),
+                f64::MAX
+            ));
+        }
+    }
+
+    #[test]
     fn recovery_scan_preserves_active_terminal_legacy_and_unrecoverable_recordings() {
         let _ = ffmpeg::init();
         let root = temp_dir("recovery-scan");
@@ -1990,7 +2007,7 @@ mod tests {
         let eligible = write_incomplete_bundle(
             &recordings,
             "eligible",
-            "Cap 2026-01-02 at 10.00.00",
+            "Bizstudio 2026-01-02 at 10.00.00",
             "InProgress",
             true,
         );
