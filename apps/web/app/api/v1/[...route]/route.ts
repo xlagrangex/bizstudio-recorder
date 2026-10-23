@@ -1087,7 +1087,10 @@ const unlockCap = Effect.fn("Agent.unlockCap")(function* (
 		Effect.catchTag("VerifyVideoPasswordError", () => Effect.succeed(true)),
 	);
 	if (!requiresPassword) {
-		return yield* badRequest(requestId, "This video does not require a password");
+		return yield* badRequest(
+			requestId,
+			"This video does not require a password",
+		);
 	}
 
 	const database = yield* Database;
