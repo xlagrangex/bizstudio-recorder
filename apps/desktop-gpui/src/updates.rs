@@ -107,7 +107,14 @@ fn current_version() -> Result<Version, String> {
     Version::parse(env!("CARGO_PKG_VERSION")).map_err(|error| error.to_string())
 }
 
+// Bizstudio Recorder is a fork: the upstream feed would install official Cap
+// over it, so updates stay off until the fork publishes its own releases.
+const UPSTREAM_UPDATES_ENABLED: bool = false;
+
 async fn available_release(channel: UpdateChannel) -> Result<Option<Release>, String> {
+    if !UPSTREAM_UPDATES_ENABLED {
+        return Ok(None);
+    }
     let current = current_version()?;
     let stable = installer::fetch_release(UpdateChannel::Stable, &current)
         .await
