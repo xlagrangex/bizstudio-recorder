@@ -1,8 +1,8 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
-	"productName": "Cap",
+	"productName": "Bizstudio Recorder",
 	"mainBinaryName": "Cap",
-	"identifier": "so.cap.desktop",
+	"identifier": "it.bizstudio.recorder",
 	"build": {
 		"beforeBundleCommand": "node scripts/prodBeforeBundle.js"
 	},

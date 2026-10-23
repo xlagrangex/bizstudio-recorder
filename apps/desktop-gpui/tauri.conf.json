@@ -1,8 +1,8 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
-	"productName": "Cap",
+	"productName": "Bizstudio Recorder",
 	"mainBinaryName": "Cap",
-	"identifier": "so.cap.desktop",
+	"identifier": "it.bizstudio.recorder",
 	"plugins": {
 		"updater": {
 			"endpoints": [
@@ -21,7 +21,7 @@
 		"createUpdaterArtifacts": true,
 		"targets": "all",
 		"category": "Video",
-		"longDescription": "Cap is the open source alternative to Loom. Lightweight, powerful, and cross-platform. Record and share in seconds.",
+		"longDescription": "Bizstudio Recorder: registra, condividi e porta ogni video nel second brain Bizstudio. Basato su Cap (AGPLv3).",
 		"externalBin": [
 			"../desktop/src-tauri/binaries/cap-muxer",
 			"../desktop/src-tauri/binaries/cap-cli"
