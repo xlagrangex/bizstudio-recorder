@@ -25,7 +25,7 @@ secrets() {
   ensure ATTENDEE_S3_KEY "attendee"
   ensure ATTENDEE_S3_SECRET "$(rand 24)"
   ensure ATTENDEE_UI_PASSWORD "$(rand 12)"
-  ensure MEETBOT_PASSWORD "$(rand 12)"
+  ensure MEETBOT_API_TOKEN "$(rand 32)"
   ensure MEETBOT_CAP_API_KEY "$(cat /proc/sys/kernel/random/uuid)"
   mkdir -p "$DATA/meet/postgres" "$DATA/meet/redis" "$DATA/meet/bridge"
 

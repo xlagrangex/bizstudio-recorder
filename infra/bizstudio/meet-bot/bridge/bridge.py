@@ -1,4 +1,3 @@
-import base64
 import hmac
 import html
 import json
@@ -26,8 +25,10 @@ ATTENDEE_URL = os.environ.get("ATTENDEE_URL", "http://attendee-app:8000").rstrip
 ATTENDEE_API_KEY = os.environ.get("ATTENDEE_API_KEY", "")
 PUBLIC_URL = os.environ.get("PUBLIC_URL", "https://rec.bizstudio.it").rstrip("/")
 BASE_PATH = os.environ.get("BASE_PATH", "/meetbot").rstrip("/")
-USER = os.environ.get("MEETBOT_USER", "vincenzo")
-PASSWORD = os.environ.get("MEETBOT_PASSWORD", "")
+CAP_URL = os.environ.get("CAP_URL", "http://cap-web:3000").rstrip("/")
+OWNER_ID = os.environ.get("MEETBOT_OWNER_ID", "cng79m7693kkajy")
+OWNER_EMAIL = os.environ.get("MEETBOT_OWNER_EMAIL", "vincenzopetronebiz@gmail.com").lower()
+API_TOKEN = os.environ.get("MEETBOT_API_TOKEN", "")
 BOT_NAME = os.environ.get("BOT_NAME", "Bizstudio Recorder")
 POLL_SECONDS = int(os.environ.get("POLL_SECONDS", "20"))
 MAX_UPTIME_SECONDS = int(os.environ.get("MAX_UPTIME_SECONDS", str(3 * 3600)))
@@ -316,21 +317,31 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
 
-    def authorized(self) -> bool:
+    def auth(self) -> str:
+        """'token' (API bearer), 'session' (owner's Bizstudio Recorder login), 'anonymous' or 'forbidden'."""
         header = self.headers.get("Authorization", "")
-        if not PASSWORD or not header.startswith("Basic "):
-            return False
-        try:
-            user, _, password = base64.b64decode(header[6:]).decode().partition(":")
-        except Exception:
-            return False
-        return hmac.compare_digest(user, USER) and hmac.compare_digest(password, PASSWORD)
+        if header.startswith("Bearer "):
+            ok = bool(API_TOKEN) and self.route().startswith("/api/") and hmac.compare_digest(header[7:], API_TOKEN)
+            return "token" if ok else "forbidden"
+        cookie = self.headers.get("Cookie", "")
+        if "next-auth.session-token" not in cookie:
+            return "anonymous"
+        # cap-web decodes the NextAuth JWT and rejects revoked sessions
+        # (authSessionVersion) and blocked accounts, so it stays the only judge.
+        response = requests.get(f"{CAP_URL}/api/auth/session", headers={"Cookie": cookie}, timeout=10)
+        response.raise_for_status()
+        user = (response.json() or {}).get("user") or {}
+        if not user:
+            return "anonymous"
+        owner = user.get("id") == OWNER_ID or (user.get("email") or "").lower() == OWNER_EMAIL
+        return "session" if owner else "forbidden"
 
     def same_origin(self) -> bool:
-        # Browsers resend Basic credentials cross-site, so a foreign page could
-        # otherwise POST a join; JSON clients send no Origin and pass.
+        # Cookie-authenticated POSTs must come from our own page; bearer clients are exempt.
         origin = self.headers.get("Origin")
-        return origin is None or origin == PUBLIC_URL
+        if origin is not None:
+            return origin == PUBLIC_URL
+        return self.headers.get("Sec-Fetch-Site") == "same-origin"
 
     def send(self, status: int, body: bytes, content_type: str = "text/html; charset=utf-8", extra: dict | None = None) -> None:
         self.send_response(status)
@@ -343,8 +354,25 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def challenge(self) -> None:
-        self.send(401, b"Autenticazione richiesta", "text/plain; charset=utf-8", {"WWW-Authenticate": 'Basic realm="Meet bot"'})
+    def gate(self) -> str | None:
+        """Returns the auth kind, or None after answering the request itself."""
+        try:
+            kind = self.auth()
+        except Exception as error:
+            log(None, f"session check failed: {error}")
+            self.send(503, b"Bizstudio Recorder non risponde, riprova tra poco.", "text/plain; charset=utf-8")
+            return None
+        api = self.route().startswith("/api/")
+        if kind == "anonymous":
+            if api:
+                self.send(401, b'{"ok": false, "error": "unauthorized"}', "application/json")
+            else:
+                self.send(302, b"", "text/plain", {"Location": f"{PUBLIC_URL}/login?next={BASE_PATH}/"})
+            return None
+        if kind == "forbidden":
+            self.send(403, "Accesso riservato al proprietario.".encode(), "text/plain; charset=utf-8")
+            return None
+        return kind
 
     def route(self) -> str:
         path = urlsplit(self.path).path
@@ -354,8 +382,8 @@ class Handler(BaseHTTPRequestHandler):
         route = self.route()
         if route == "/health":
             return self.send(200, b"ok", "text/plain")
-        if not self.authorized():
-            return self.challenge()
+        if not self.gate():
+            return
         if route in ("", "/"):
             return self.send(200, render())
         if route == "/api/bots":
@@ -364,9 +392,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send(404, b"not found", "text/plain")
 
     def do_POST(self):
-        if not self.authorized():
-            return self.challenge()
-        if not self.same_origin():
+        kind = self.gate()
+        if not kind:
+            return
+        if kind == "session" and not self.same_origin():
             return self.send(403, b"cross-origin request refused", "text/plain")
         route = self.route()
         length = min(int(self.headers.get("Content-Length") or 0), 64 * 1024)
