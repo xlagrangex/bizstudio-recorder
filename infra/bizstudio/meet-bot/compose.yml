@@ -1,0 +1,161 @@
+# Meet bot for Bizstudio Recorder on vincenzoserver: self-hosted Attendee joins
+# a Google Meet, records it, and meet-bridge imports the mp4 into Cap for the
+# owner, where the bizrec worker transcribes it.
+# Run: cd /root/bizstudio-recorder/src/infra/bizstudio/meet-bot && \
+#      docker compose --env-file /root/bizstudio-recorder/secrets.env up -d
+# Requires the bizrec project (minio, cap-web) up: it joins bizrec_default.
+# One-time setup: ./bootstrap.sh (MinIO user/bucket, Attendee account, API keys).
+name: bizrec-meet
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+x-attendee: &attendee
+  <<: *logging
+  build:
+    context: https://github.com/attendee-labs/attendee.git#v1.84.4
+  image: bizrec-meet/attendee:v1.84.4
+  restart: unless-stopped
+  environment:
+    DJANGO_SETTINGS_MODULE: attendee.settings.bizrec
+    DJANGO_SECRET_KEY: ${ATTENDEE_DJANGO_SECRET_KEY}
+    CREDENTIALS_ENCRYPTION_KEY: ${ATTENDEE_CREDENTIALS_ENCRYPTION_KEY}
+    POSTGRES_HOST: attendee-postgres
+    POSTGRES_DB: attendee
+    POSTGRES_USER: attendee
+    POSTGRES_PASSWORD: ${ATTENDEE_POSTGRES_PASSWORD}
+    POSTGRES_SSL_REQUIRE: "false"
+    REDIS_URL: redis://attendee-redis:6379/0
+    AWS_ENDPOINT_URL: http://minio:9000
+    AWS_ACCESS_KEY_ID: ${ATTENDEE_S3_KEY}
+    AWS_SECRET_ACCESS_KEY: ${ATTENDEE_S3_SECRET}
+    AWS_DEFAULT_REGION: us-east-1
+    AWS_RECORDING_STORAGE_BUCKET_NAME: attendee
+    DJANGO_SSL_REQUIRE: "false"
+    REQUIRE_HTTPS_WEBHOOKS: "false"
+    DISABLE_SIGNUP: "true"
+    DISABLE_EMAIL: "true"
+    SITE_DOMAIN: localhost:3030
+    CSRF_TRUSTED_ORIGINS: http://localhost:3030,http://127.0.0.1:3030
+    TIME_ZONE: Europe/Rome
+    ENABLE_CHROME_SANDBOX: "false"
+    # Everything except run_bot goes to the light worker, so a bot that occupies
+    # the single bot slot for hours never delays other tasks.
+    PROCESS_UTTERANCE_CELERY_QUEUE: light
+    PROCESS_ASYNC_TRANSCRIPTION_CELERY_QUEUE: light
+    SYNC_CALENDAR_CELERY_QUEUE: light
+    LAUNCH_SCHEDULED_BOT_CELERY_QUEUE: light
+    LAUNCH_ADHOC_BOT_CELERY_QUEUE: light
+    DELIVER_WEBHOOK_CELERY_QUEUE: light
+  volumes:
+    - ./attendee_settings.py:/attendee/attendee/settings/bizrec.py:ro
+  networks: [default, bizrec]
+  depends_on:
+    attendee-postgres: { condition: service_healthy }
+    attendee-redis: { condition: service_healthy }
+
+services:
+  attendee-postgres:
+    <<: *logging
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: attendee
+      POSTGRES_USER: attendee
+      POSTGRES_PASSWORD: ${ATTENDEE_POSTGRES_PASSWORD}
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=40"]
+    volumes:
+      - ${BIZREC_DATA:-/root/bizstudio-recorder}/meet/postgres:/var/lib/postgresql/data
+    mem_limit: 256m
+    memswap_limit: 256m
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "attendee", "-d", "attendee"]
+      interval: 10s
+      retries: 10
+
+  attendee-redis:
+    <<: *logging
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--maxmemory", "48mb", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - ${BIZREC_DATA:-/root/bizstudio-recorder}/meet/redis:/data
+    mem_limit: 96m
+    memswap_limit: 96m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 10
+
+  attendee-app:
+    <<: *attendee
+    command: >
+      bash -c "python manage.py migrate --noinput &&
+      python manage.py collectstatic --noinput -v 0 &&
+      exec gunicorn attendee.wsgi --bind 0.0.0.0:8000 --workers 2 --timeout 120"
+    ports:
+      - "127.0.0.1:3030:8000"
+    mem_limit: 640m
+    memswap_limit: 640m
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8000/accounts/login/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  attendee-worker:
+    <<: *attendee
+    command: celery -A attendee worker -Q light --pool=solo -l INFO -n light@%h
+    mem_limit: 384m
+    memswap_limit: 384m
+
+  # The only container that runs Chrome. Concurrency 1 caps the box at one
+  # meeting at a time; the cgroup limit means a runaway Chrome is OOM-killed
+  # inside this container instead of pressuring CRM, n8n and the rest.
+  attendee-bot:
+    <<: *attendee
+    command: celery -A attendee worker -Q celery --concurrency=1 --prefetch-multiplier=1 -l INFO -n bot@%h
+    mem_limit: 2560m
+    memswap_limit: 2560m
+    cpus: 2.5
+    pids_limit: 1024
+    shm_size: 512m
+    stop_grace_period: 60s
+
+  meet-bridge:
+    <<: *logging
+    build: ./bridge
+    restart: unless-stopped
+    environment:
+      ATTENDEE_URL: http://attendee-app:8000
+      ATTENDEE_API_KEY: ${ATTENDEE_API_KEY}
+      CAP_URL: http://cap-web:3000
+      CAP_API_KEY: ${MEETBOT_CAP_API_KEY}
+      CAP_S3_INTERNAL: http://minio:9000
+      PUBLIC_URL: https://rec.bizstudio.it
+      BASE_PATH: /meetbot
+      MEETBOT_USER: vincenzo
+      MEETBOT_PASSWORD: ${MEETBOT_PASSWORD}
+      BOT_NAME: Bizstudio Recorder
+      TZ_NAMES: Europe/Rome
+    volumes:
+      - ${BIZREC_DATA:-/root/bizstudio-recorder}/meet/bridge:/state
+    ports:
+      - "127.0.0.1:3031:8080"
+    networks: [default, bizrec]
+    depends_on:
+      attendee-app: { condition: service_healthy }
+    mem_limit: 384m
+    memswap_limit: 384m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys,time; sys.exit(time.time() - os.path.getmtime('/state/heartbeat') > 300)"]
+      interval: 60s
+      start_period: 60s
+
+networks:
+  bizrec:
+    name: bizrec_default
+    external: true
