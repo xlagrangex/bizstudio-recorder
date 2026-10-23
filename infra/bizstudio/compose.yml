@@ -99,7 +99,7 @@ services:
       start_period: 60s
 
   cap-web:
-    image: ghcr.io/capsoftware/cap-web:latest
+    image: ghcr.io/xlagrangex/cap-web:latest
     restart: unless-stopped
     depends_on:
       mysql:
