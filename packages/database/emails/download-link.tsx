@@ -11,6 +11,7 @@ import {
 	Text,
 } from "@react-email/components";
 import BrandHeader from "./components/BrandHeader";
+import { ctaStyle } from "./components/cta";
 import Footer from "./components/Footer";
 
 export function DownloadLink({ email = "" }: { email: string }) {
@@ -32,7 +33,8 @@ export function DownloadLink({ email = "" }: { email: string }) {
 
 						<Section className="my-6">
 							<Link
-								className="block w-full rounded-lg bg-black px-6 py-3 text-center text-[13px] font-semibold text-white no-underline"
+								className="block w-full rounded-lg bg-[#a51b80] px-6 py-3 text-center text-[13px] font-semibold text-white no-underline"
+								style={ctaStyle}
 								href="https://rec.bizstudio.it"
 							>
 								Open Bizstudio Recorder

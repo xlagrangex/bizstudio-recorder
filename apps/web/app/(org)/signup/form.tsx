@@ -285,7 +285,7 @@ export function SignupForm() {
 					layout="position"
 					className="text-[16px] text-gray-10"
 				>
-					Beautiful screen recordings, owned by you.
+					Record your screen and share it with a link.
 				</motion.p>
 			</motion.div>
 			<motion.div layout="position" className="flex flex-col space-y-3">
@@ -544,7 +544,7 @@ const NormalSignup = ({
 					name="email"
 					autoFocus
 					type="email"
-					placeholder={emailSent ? "" : "tim@apple.com"}
+					placeholder={emailSent ? "" : "you@bizstudio.it"}
 					autoComplete="email"
 					required
 					value={email}

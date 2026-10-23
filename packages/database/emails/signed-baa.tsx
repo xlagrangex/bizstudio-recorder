@@ -24,8 +24,7 @@ export function SignedBaa({
 		<Html>
 			<Head />
 			<Preview>
-				Your Business Associate Agreement with Cap is signed and
-				active
+				Your Business Associate Agreement with Cap is signed and active
 			</Preview>
 			<Tailwind>
 				<Body className="mx-auto my-auto bg-gray-1 font-sans">
@@ -35,10 +34,10 @@ export function SignedBaa({
 							Your signed BAA is attached
 						</Heading>
 						<Text className="text-sm leading-6 text-black">
-							The Business Associate Agreement between {entityName} and
-							Cap Software, Inc. has been executed, effective{" "}
-							{effectiveDate}. A fully signed copy is attached to this email as
-							a PDF for your records.
+							The Business Associate Agreement between {entityName} and Cap
+							Software, Inc. has been executed, effective {effectiveDate}. A
+							fully signed copy is attached to this email as a PDF for your
+							records.
 						</Text>
 						<Text className="text-sm leading-6 text-black">
 							The Signed BAA add-on is now active on your organization and bills

@@ -14,7 +14,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 					"rounded-xl hover:bg-gray-2 autofill:bg-gray-1 hover:border-gray-5 h-[44px] placeholder:text-gray-8 border focus:border-gray-5",
 					"file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none",
 					"disabled:cursor-not-allowed disabled:bg-gray-2 disabled:text-gray-8 disabled:placeholder:text-gray-8 placeholder:transition-all",
-					"ring-0 ring-gray-2 focus:ring-1 focus:ring-gray-12 focus:ring-offset-2 ring-offset-gray-3 hover:placeholder:text-gray-12 placeholder:duration-200",
+					"ring-0 ring-gray-2 focus:ring-1 focus:ring-blue-9 focus:ring-offset-2 ring-offset-gray-3 hover:placeholder:text-gray-12 placeholder:duration-200",
 					className,
 				)}
 				ref={ref}

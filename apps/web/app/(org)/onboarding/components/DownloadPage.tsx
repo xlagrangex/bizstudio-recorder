@@ -47,7 +47,7 @@ export function DownloadPage() {
 							Download Bizstudio Recorder
 						</h1>
 						<p className="text-lg text-center text-gray-11 text-pretty">
-							Start recording beautiful screen recordings today
+							Start recording your screen today
 						</p>
 					</div>
 				</div>

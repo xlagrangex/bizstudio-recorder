@@ -54,7 +54,7 @@ export const EmptyCapState: React.FC<EmptyCapStateProps> = ({ userName }) => {
 							<p className="text-sm text-gray-10">or</p>
 						</>
 					)}
-					<WebRecorderDialog />
+					<WebRecorderDialog cta />
 					{showChromeButton && (
 						<>
 							<p className="text-sm text-gray-10">or</p>

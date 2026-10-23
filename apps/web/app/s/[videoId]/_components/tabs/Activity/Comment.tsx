@@ -101,11 +101,11 @@ const CommentComponent: React.FC<{
 							(commentParams || replyParams) === comment.id ? [1, 1.08, 1] : 1,
 						borderColor:
 							(commentParams || replyParams) === comment.id
-								? ["#EEEEEE", "#1696e0"]
+								? ["#EEEEEE", "#A51B80"]
 								: "#EEEEEE",
 						backgroundColor:
 							(commentParams || replyParams) === comment.id
-								? ["#F9F9F9", "#EDF6FF"]
+								? ["#F9F9F9", "#FDF2FA"]
 								: " #F9F9F9",
 					}}
 					transition={{ duration: 0.75, ease: "easeInOut", delay: 0.15 }}

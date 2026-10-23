@@ -74,7 +74,21 @@ module.exports = (__app, _options) => {
 				colors: {
 					gray: getColorScale("gray"),
 					"gray-a": getColorScale("gray-a", true),
-					blue: getColorScale("blue"),
+					// Tailwind's default blue-50..950 would otherwise leak Cap blue past the remapped Radix scale.
+					blue: {
+						...getColorScale("blue"),
+						50: "#fdf2fa",
+						100: "#fbe4f4",
+						200: "#f6c9e8",
+						300: "#ee9fd5",
+						400: "#cf4aab",
+						500: "#a51b80",
+						600: "#8a166b",
+						700: "#721458",
+						800: "#5e144a",
+						900: "#4a0d3a",
+						950: "#2e0622",
+					},
 					border: "hsl(var(--border))",
 					input: "hsl(var(--input))",
 					ring: "hsl(var(--ring))",
@@ -136,8 +150,8 @@ module.exports = (__app, _options) => {
 						40: "rgba(255,255,255,0.4)",
 					},
 					"blue-transparent": {
-						10: "rgba(34,64,122,0.1)",
-						20: "rgba(34,64,122,0.2)",
+						10: "rgba(165,27,128,0.1)",
+						20: "rgba(165,27,128,0.2)",
 					},
 					red: {
 						50: "#FFEBEE",
@@ -151,6 +165,9 @@ module.exports = (__app, _options) => {
 					},
 				},
 				backgroundImage: {
+					"biz-grad-vivid":
+						"linear-gradient(135deg, #2f6bff, #e21ecf 50%, #ff7a1a)",
+					"biz-grad": "linear-gradient(135deg, #1b4088, #a51b80 50%, #da5713)",
 					"gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
 					"gradient-conic":
 						"conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",

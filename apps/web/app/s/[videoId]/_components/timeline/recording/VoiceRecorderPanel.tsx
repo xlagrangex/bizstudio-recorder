@@ -53,7 +53,7 @@ export function VoiceRecorderPanel({
 			if (!canvas || !context) return;
 			context.clearRect(0, 0, canvas.width, canvas.height);
 			const mid = canvas.height / 2;
-			context.fillStyle = "#1696e0";
+			context.fillStyle = "#A51B80";
 			for (let index = 0; index < levels.length; index += 1) {
 				const height = Math.max(2, (levels[index] ?? 0) * canvas.height);
 				context.beginPath();

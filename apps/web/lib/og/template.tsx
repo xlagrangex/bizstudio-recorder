@@ -4,8 +4,8 @@ import { OG_MONO, OG_SANS, OG_SERIF } from "@/lib/og/fonts";
 export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 630;
 
-export const OG_BLUE = "#4785FF";
-export const OG_BLUE_LIGHT = "#ADC9FF";
+export const OG_BLUE = "#A51B80";
+export const OG_BLUE_LIGHT = "#F0C8E5";
 export const OG_INK = "#111111";
 export const OG_INK_SOFT = "rgba(17,17,17,0.74)";
 export const OG_INK_MUTED = "rgba(17,17,17,0.5)";

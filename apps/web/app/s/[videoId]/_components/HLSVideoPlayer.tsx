@@ -638,7 +638,7 @@ export function HLSVideoPlayer({
 							<button
 								type="button"
 								onClick={reloadPlayback}
-								className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-full"
+								className="px-4 py-2 text-sm font-medium text-white bg-biz-grad-vivid rounded-full"
 							>
 								Try again
 							</button>
@@ -648,7 +648,7 @@ export function HLSVideoPlayer({
 							type="button"
 							onClick={retryProcessing}
 							disabled={isRetryingProcessing}
-							className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed hover:bg-blue-600"
+							className="px-4 py-2 text-sm font-medium text-white bg-biz-grad-vivid rounded-full transition-[filter] disabled:opacity-60 disabled:cursor-not-allowed hover:brightness-110"
 						>
 							{isRetryingProcessing ? "Retrying..." : "Retry Processing"}
 						</button>
@@ -738,7 +738,7 @@ export function HLSVideoPlayer({
 							exit={{ opacity: 0, y: 10 }}
 							transition={{ duration: 0.2 }}
 							onClick={() => videoRef.current?.play()}
-							className="flex absolute inset-0 z-10 justify-center items-center m-auto bg-blue-500 rounded-full transition-colors transform cursor-pointer hover:bg-blue-600 size-12 xs:size-20 md:size-32"
+							className="flex absolute inset-0 z-10 justify-center items-center m-auto bg-biz-grad-vivid rounded-full shadow-[inset_0_0_7px_#ffffff59,0_16px_24px_#b13ec247] transition-[filter] transform cursor-pointer hover:brightness-110 size-12 xs:size-20 md:size-32"
 						>
 							<FontAwesomeIcon
 								icon={faPlay}

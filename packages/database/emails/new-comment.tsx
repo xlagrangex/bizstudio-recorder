@@ -11,6 +11,7 @@ import {
 	Text,
 } from "@react-email/components";
 import BrandHeader from "./components/BrandHeader";
+import { ctaStyle } from "./components/cta";
 import Footer from "./components/Footer";
 
 export function NewComment({
@@ -52,7 +53,8 @@ export function NewComment({
 						</Text>
 						<Section className="my-8 text-center">
 							<Link
-								className="rounded-full bg-black px-6 py-3 text-center text-[12px] font-semibold text-white no-underline"
+								className="rounded-full bg-[#a51b80] px-6 py-3 text-center text-[12px] font-semibold text-white no-underline"
+								style={ctaStyle}
 								href={url}
 							>
 								View Comment

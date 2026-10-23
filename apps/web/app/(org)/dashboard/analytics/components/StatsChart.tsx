@@ -138,11 +138,11 @@ export default function StatsBox({
 
 const metricColors = {
 	views: {
-		bg: "rgba(59, 130, 246, 0.03)",
-		bgHover: "rgba(59, 130, 246, 0.05)",
-		bgSelected: "rgba(59, 130, 246, 0.08)",
-		border: "rgba(59, 130, 246, 0.15)",
-		borderSelected: "rgba(59, 130, 246, 0.25)",
+		bg: "rgba(165, 27, 128, 0.03)",
+		bgHover: "rgba(165, 27, 128, 0.05)",
+		bgSelected: "rgba(165, 27, 128, 0.08)",
+		border: "rgba(165, 27, 128, 0.15)",
+		borderSelected: "rgba(165, 27, 128, 0.25)",
 	},
 	comments: {
 		bg: "rgba(236, 72, 153, 0.03)",

@@ -210,7 +210,7 @@ const StepOne = ({
 					name="email"
 					autoFocus
 					type="email"
-					placeholder={emailSent ? "" : "tim@apple.com"}
+					placeholder={emailSent ? "" : "you@bizstudio.it"}
 					autoComplete="email"
 					required
 					value={email}

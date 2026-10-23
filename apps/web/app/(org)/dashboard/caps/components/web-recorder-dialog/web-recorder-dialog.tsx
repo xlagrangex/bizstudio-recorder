@@ -56,7 +56,7 @@ const waitForNextFrame = () =>
 		window.requestAnimationFrame(() => resolve());
 	});
 
-export const WebRecorderDialog = () => {
+export const WebRecorderDialog = ({ cta = false }: { cta?: boolean }) => {
 	const [open, setOpen] = useState(false);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [howItWorksOpen, setHowItWorksOpen] = useState(false);
@@ -277,7 +277,12 @@ export const WebRecorderDialog = () => {
 		<>
 			<Dialog open={open} onOpenChange={handleOpenChange}>
 				<DialogTrigger asChild>
-					<Button variant="blue" size="sm" className="flex items-center gap-2">
+					<Button
+						variant="blue"
+						size={cta ? "lg" : "sm"}
+						arrow={cta}
+						className="flex items-center gap-2"
+					>
 						<MonitorIcon className="size-3.5" />
 						Record in Browser
 					</Button>

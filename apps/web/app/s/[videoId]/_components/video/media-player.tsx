@@ -2265,7 +2265,7 @@ function MediaPlayerSeek(props: MediaPlayerSeekProps) {
 							width: `${bufferedProgress * 100}%`,
 						}}
 					/>
-					<SliderPrimitive.Range className="absolute h-full bg-white will-change-[width]" />
+					<SliderPrimitive.Range className="absolute h-full bg-biz-grad-vivid will-change-[width]" />
 					{seekState.isHovering && effectiveDuration > 0 && (
 						<div
 							data-slot="media-player-seek-hover-range"
@@ -2523,7 +2523,7 @@ function MediaPlayerVolume(props: MediaPlayerVolumeProps) {
 				{/* Gray-scale rather than literal white/zinc so the slider follows
 				    whatever tone the controls are scoped to. */}
 				<SliderPrimitive.Track className="overflow-hidden relative w-full h-1 rounded-full grow bg-gray-8">
-					<SliderPrimitive.Range className="absolute h-full bg-gray-12 will-change-[width]" />
+					<SliderPrimitive.Range className="absolute h-full bg-blue-9 will-change-[width]" />
 				</SliderPrimitive.Track>
 				<SliderPrimitive.Thumb className="block size-2.5 shrink-0 rounded-full bg-gray-12 shadow-sm ring-ring/50 transition-[color,box-shadow] will-change-transform hover:ring-4 focus-visible:outline-hidden focus-visible:ring-4 disabled:pointer-events-none disabled:opacity-50" />
 			</SliderPrimitive.Root>
@@ -3257,7 +3257,7 @@ function MediaPlayerEnhancedAudio(props: MediaPlayerEnhancedAudioProps) {
 				size="icon"
 				className={cn(
 					"size-8",
-					enhancedAudioEnabled && "text-blue-500",
+					enhancedAudioEnabled && "text-blue-400",
 					className,
 				)}
 				onClick={onEnhancedAudioToggle}

@@ -1,6 +1,7 @@
 import { classNames } from "@cap/utils/helpers";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import { ArrowUpRight } from "lucide-react";
 import * as React from "react";
 import { LoadingSpinner } from "./LoadingSpinner";
 
@@ -14,21 +15,21 @@ const buttonVariants = cva(
 		variants: {
 			variant: {
 				primary:
-					"bg-gray-12 dark-button-shadow text-gray-1 disabled:bg-gray-6 disabled:text-gray-9",
-				blue: "bg-blue-600 text-white disabled:border-gray-8 border border-blue-800 shadow-[0_1.50px_0_0_rgba(255,255,255,0.20)_inset] hover:bg-blue-700  disabled:bg-gray-7 disabled:text-gray-10",
+					"bg-biz-grad-vivid text-white shadow-[inset_0_0_7px_#ffffff59,0_16px_24px_#b13ec247] hover:brightness-110 active:bg-biz-grad disabled:bg-none disabled:bg-gray-6 disabled:text-gray-9 disabled:shadow-none disabled:brightness-100",
+				blue: "bg-biz-grad-vivid text-white shadow-[inset_0_0_7px_#ffffff59,0_16px_24px_#b13ec247] hover:brightness-110 active:bg-biz-grad disabled:bg-none disabled:bg-gray-7 disabled:text-gray-10 disabled:shadow-none disabled:brightness-100",
 				destructive:
 					"bg-red-500 text-white border-transparent hover:bg-red-600 disabled:bg-gray-7 disabled:border-gray-8 border disabled:text-gray-10",
 				outline:
-					"border border-gray-4 hover:border-gray-5 hover:bg-gray-3 text-gray-12 disabled:bg-gray-8",
+					"bg-transparent border border-gray-7 hover:bg-gray-3 text-gray-12 disabled:bg-gray-8",
 				white:
-					"bg-gray-3 border border-gray-5 hover:border-gray-6 text-gray-12 hover:bg-gray-6 disabled:bg-gray-8",
+					"bg-transparent border border-gray-7 hover:bg-gray-3 text-gray-12 disabled:bg-gray-8",
 				ghost: "hover:bg-white/20 hover:text-white",
 				gray: "bg-gray-5 hover:bg-gray-7 border gray-button-border gray-button-shadow text-gray-12 disabled:border-gray-7 disabled:bg-gray-8 disabled:text-gray-11",
 				dark: "bg-gray-12 dark-button-shadow hover:bg-gray-11 border dark-button-border text-gray-1 disabled:cursor-not-allowed disabled:text-gray-10 disabled:bg-gray-7 disabled:border-gray-8",
 				darkgradient:
 					"bg-linear-to-t button-gradient-border from-[#0f0f0f] to-[#404040] shadow-[0_0_0_1px] hover:brightness-110 shadow-[#383838] text-gray-50 hover:bg-[#383838] disabled:bg-[#383838] border-transparent",
 				radialblue:
-					"text-gray-50 border button-gradient-border shadow-[0_0_0_1px] shadow-blue-400 disabled:bg-gray-1 border-0 [background:radial-gradient(90%_100%_at_15%_12%,#9BC4FF_0%,#3588FF_100%)] border-transparent hover:opacity-80",
+					"bg-biz-grad-vivid text-white border-0 shadow-[inset_0_0_7px_#ffffff59,0_16px_24px_#b13ec247] hover:brightness-110 active:bg-biz-grad disabled:bg-none disabled:bg-gray-6 disabled:shadow-none",
 				transparent:
 					"bg-transparent text-gray-10 hover:underline transition-all duration-200 hover:text-gray-12",
 			},
@@ -40,6 +41,13 @@ const buttonVariants = cva(
 				icon: "h-9 w-9",
 			},
 		},
+		compoundVariants: [
+			{
+				variant: ["primary", "blue", "radialblue"],
+				size: ["xs", "sm", "icon"],
+				className: "shadow-[inset_0_0_5px_#ffffff59,0_6px_12px_#b13ec233]",
+			},
+		],
 	},
 );
 
@@ -55,6 +63,7 @@ export interface ButtonProps
 	kbd?: string;
 	icon?: React.ReactNode;
 	target?: string;
+	arrow?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -72,6 +81,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 			kbd,
 			icon,
 			target,
+			arrow = false,
 			...props
 		},
 		ref,
@@ -79,7 +89,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 		const Comp = href ? "a" : asChild ? Slot : ("button" as any);
 		return (
 			<Comp
-				className={classNames(buttonVariants({ variant, size, className }))}
+				className={classNames(
+					buttonVariants({ variant, size }),
+					arrow && "group gap-3 py-1.5 pr-1.5 pl-5",
+					className,
+				)}
 				ref={ref as any}
 				target={target || undefined}
 				href={href || undefined}
@@ -95,6 +109,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 				)}
 				{icon && icon}
 				{props.children}
+				{arrow && (
+					<span className="flex justify-center items-center bg-white rounded-full size-8 shrink-0 text-[#131313]">
+						<ArrowUpRight className="transition-transform duration-200 size-4 group-hover:rotate-45" />
+					</span>
+				)}
 				{kbd && (
 					<kbd className="hidden justify-center items-center ml-1 text-xs rounded-full border md:flex size-5 bg-gray-11 border-gray-10">
 						{kbd}

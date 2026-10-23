@@ -28,6 +28,7 @@ import { useRouter } from "next/navigation";
 import { memo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useStripeContext } from "@/app/Layout/StripeContext";
+import { MascotArt } from "@/components/MascotArt";
 import { PRICING } from "@/data/pricing";
 import { Fit, Layout, useRive } from "@/lib/rive";
 
@@ -253,7 +254,7 @@ const UpgradeModalImpl = ({
 						>
 							<div className="flex relative flex-col flex-1 justify-between items-end self-stretch border-r-0 border-b md:border-b-0 md:border-r border-gray-4">
 								<div className="h-36 md:h-[275px] border-b border-gray-4 w-full overflow-hidden">
-									<ProRiveArt />
+									{buildEnv.NEXT_PUBLIC_IS_CAP ? <ProRiveArt /> : <MascotArt />}
 								</div>
 								<div className="flex relative flex-col flex-1 justify-center items-center px-4 py-6 w-full">
 									<div className="flex flex-col items-center">

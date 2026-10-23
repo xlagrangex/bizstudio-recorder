@@ -3,22 +3,40 @@
 @import "@radix-ui/colors/gray.css";
 @import "@radix-ui/colors/gray-alpha.css";
 @import "@radix-ui/colors/gray-dark.css";
-@import "@radix-ui/colors/blue.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-	--primary: #005cb1;
-	--primary-2: #004c93;
-	--primary-3: #003b73;
-	--secondary: #2eb4ff;
-	--secondary-2: #1696e0;
-	--secondary-3: #117ebd;
-	--tertiary: #c5eaff;
-	--tertiary-2: #d3e5ff;
-	--tertiary-3: #e0edff;
+	--blue-1: #fefcfe;
+	--blue-2: #fdf6fb;
+	--blue-3: #fae8f5;
+	--blue-4: #f6d9ee;
+	--blue-5: #f0c8e5;
+	--blue-6: #e8b2d9;
+	--blue-7: #dc93c8;
+	--blue-8: #cc6bb2;
+	--blue-9: #a51b80;
+	--blue-10: #92166f;
+	--blue-11: #9a1a78;
+	--blue-12: #4a0d3a;
+	--biz-accent: #a51b80;
+	--biz-grad-vivid: linear-gradient(135deg, #2f6bff, #e21ecf 50%, #ff7a1a);
+	--biz-grad: linear-gradient(135deg, #1b4088, #a51b80 50%, #da5713);
+	--biz-text: #131313;
+	--biz-muted: #797979;
+	--biz-border: #e5e5e5;
+	--biz-border-strong: #d3d3d3;
+	--primary: #a51b80;
+	--primary-2: #8a166b;
+	--primary-3: #6e1155;
+	--secondary: #e21ecf;
+	--secondary-2: #c41ab3;
+	--secondary-3: #a51b80;
+	--tertiary: #fae8f5;
+	--tertiary-2: #f6d9ee;
+	--tertiary-3: #f0c8e5;
 	--filler: #efefef;
 	--filler-2: #e4e4e4;
 	--filler-3: #e2e2e2;
@@ -32,6 +50,44 @@
 	--background-start-rgb: 214, 219, 220;
 	--background-end-rgb: 255, 255, 255;
 	--gradient-border-radius: 12px;
+}
+
+.dark,
+.dark-theme {
+	--blue-1: #1a1118;
+	--blue-2: #22141e;
+	--blue-3: #3a1531;
+	--blue-4: #4b1440;
+	--blue-5: #58194c;
+	--blue-6: #68225a;
+	--blue-7: #812d70;
+	--blue-8: #a6388f;
+	--blue-9: #a51b80;
+	--blue-10: #b72d93;
+	--blue-11: #f07fd0;
+	--blue-12: #fbd1ee;
+}
+
+/* Tailwind's static blue-500..900 are fixed hex values, so on dark surfaces magenta text is lifted to the readable end of the dark ramp. */
+.dark .text-blue-9,
+.dark .text-blue-10,
+.dark .text-blue-500,
+.dark .text-blue-600,
+.dark .text-blue-700,
+.dark .text-blue-800,
+.dark .text-blue-900 {
+	color: var(--blue-11);
+}
+
+.dark .hover\:text-blue-8:hover,
+.dark .hover\:text-blue-500:hover,
+.dark .hover\:text-blue-600:hover,
+.dark .hover\:text-blue-700:hover,
+.dark .hover\:text-blue-800:hover,
+.dark .group:hover .group-hover\:text-blue-9,
+.dark .group:hover .group-hover\:text-blue-600,
+.dark .group:hover .group-hover\:text-blue-11 {
+	color: var(--blue-12);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -125,12 +181,12 @@ html {
 }
 
 .dark ::selection {
-	background: #ffffff;
-	color: #000000;
+	background: #f07fd0;
+	color: #131313;
 }
 
 ::selection {
-	background: #000000;
+	background: #a51b80;
 	color: #ffffff;
 }
 
@@ -999,7 +1055,7 @@ footer a {
 		--destructive-foreground: 210 20% 98%;
 		--border: 220 13% 91%;
 		--input: 220 13% 91%;
-		--ring: 224 71.4% 4.1%;
+		--ring: 316 72% 38%;
 		--chart-1: 12 76% 61%;
 		--chart-2: 173 58% 39%;
 		--chart-3: 197 37% 24%;
@@ -1026,7 +1082,7 @@ footer a {
 		--destructive-foreground: 210 20% 98%;
 		--border: 215 27.9% 16.9%;
 		--input: 215 27.9% 16.9%;
-		--ring: 216 12.2% 83.9%;
+		--ring: 317 78% 72%;
 		--chart-1: 220 70% 50%;
 		--chart-2: 160 60% 45%;
 		--chart-3: 30 80% 55%;

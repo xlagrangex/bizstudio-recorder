@@ -56,11 +56,11 @@ const CapIcon = forwardRef<CapIconHandle, CapIconProps>(
 				onMouseLeave={handleMouseLeave}
 				{...props}
 			>
-				<motion.svg
+				<svg
+					aria-hidden="true"
 					width={size}
 					height={size}
-					transition={{ type: "spring", stiffness: 50, damping: 10 }}
-					viewBox="0 0 32 32"
+					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
 					strokeWidth="2"
@@ -68,31 +68,18 @@ const CapIcon = forwardRef<CapIconHandle, CapIconProps>(
 					strokeLinejoin="round"
 					xmlns="http://www.w3.org/2000/svg"
 				>
-					<motion.circle
-						cx="16"
-						cy="16"
-						r="12"
-						fill="none"
-						stroke="currentColor"
-					/>
-					<motion.circle
-						initial={{
-							fill: "none",
-							opacity: 0.5,
-						}}
+					<rect x="2" y="6" width="14" height="12" rx="2" />
+					<motion.path
+						d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"
+						initial={{ x: 0 }}
 						variants={{
-							normal: { fill: "none", opacity: 0.5 },
-							animate: { fill: "currentColor", opacity: [0.3, 1, 0.3, 1] },
+							normal: { x: 0 },
+							animate: { x: [0, 1.5, 0] },
 						}}
 						animate={controls}
 						transition={{ duration: 0.5, ease: "easeInOut" }}
-						cx="16"
-						cy="16"
-						r="8"
-						fill="none"
-						stroke="currentColor"
 					/>
-				</motion.svg>
+				</svg>
 			</div>
 		);
 	},

@@ -121,13 +121,13 @@ export function createDesktopRedirectPage(
 			}
 
 			button {
-				background: #2563eb;
+				background: linear-gradient(135deg, #2f6bff, #e21ecf 50%, #ff7a1a);
 				color: white;
 			}
 
 			a {
-				background: #e5eefc;
-				color: #1d4ed8;
+				background: #fae8f5;
+				color: #a51b80;
 			}
 
 			#status {

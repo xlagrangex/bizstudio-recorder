@@ -15,6 +15,7 @@ import { memo, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/app/Layout/AuthContext";
 import { useStripeContext } from "@/app/Layout/StripeContext";
+import { MascotArt } from "@/components/MascotArt";
 import { PRICING } from "@/data/pricing";
 import { useEffectQuery } from "@/lib/EffectRuntime";
 import { Fit, Layout, useRive } from "@/lib/rive";
@@ -231,7 +232,7 @@ export function AnalyticsDashboard() {
 						>
 							<div className="flex relative flex-col flex-1 justify-between items-end self-stretch">
 								<div className="h-[150px] border-b border-gray-4 w-full overflow-hidden">
-									<ProRiveArt />
+									{buildEnv.NEXT_PUBLIC_IS_CAP ? <ProRiveArt /> : <MascotArt />}
 								</div>
 								<div className="flex relative flex-col flex-1 justify-center items-center py-6 w-full bg-gray-2 bg-opacity-75 backdrop-blur-md">
 									<div className="flex flex-col items-center">
