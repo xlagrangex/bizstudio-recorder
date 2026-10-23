@@ -491,8 +491,9 @@ const TRANSPARENT: &str = "transparent";
 /// `handleSize` (`:611-614`): ten **screen** pixels, expressed in frame units
 /// at the zoom in force.
 const HANDLE_SCREEN_SIZE: f64 = 10.;
-/// The selection blue -- `#3b82f6`, hardcoded in the source rather than themed.
-const SELECTION_BLUE: u32 = 0x3b82f6;
+/// The selection chrome, the brand magenta in both themes (upstream hardcodes
+/// `#3b82f6`).
+const SELECTION_ACCENT: u32 = 0xa51b80;
 /// A creation smaller than this in both axes is discarded on mouse-up
 /// (`:498`), and a mask thinner than this on either axis is deleted by the
 /// clamp effect (`:118`).
@@ -3585,14 +3586,14 @@ fn paint_layer(paint: &LayerPaint, bounds: Bounds<Pixels>, window: &mut Window, 
             push_rounded_rect(&mut fill, rect, 4.);
             paint_fill(
                 fill,
-                Theme::with_alpha(gpui::rgb(SELECTION_BLUE), 0.05),
+                Theme::with_alpha(gpui::rgb(SELECTION_ACCENT), 0.05),
                 window,
             );
             let mut stroke = PathBuilder::stroke(px(2.));
             push_rounded_rect(&mut stroke, rect, 4.);
             paint_fill(
                 stroke,
-                Theme::with_alpha(gpui::rgb(SELECTION_BLUE), 0.4),
+                Theme::with_alpha(gpui::rgb(SELECTION_ACCENT), 0.4),
                 window,
             );
         }
@@ -3851,12 +3852,12 @@ fn paint_selection(
         push_rounded_rect(&mut fill, rect, 4.);
         paint_fill(
             fill,
-            Theme::with_alpha(gpui::rgb(SELECTION_BLUE), 0.1),
+            Theme::with_alpha(gpui::rgb(SELECTION_ACCENT), 0.1),
             window,
         );
         let mut stroke = PathBuilder::stroke(px(2.));
         push_rounded_rect(&mut stroke, rect, 4.);
-        paint_fill(stroke, gpui::rgb(SELECTION_BLUE).into(), window);
+        paint_fill(stroke, gpui::rgb(SELECTION_ACCENT).into(), window);
     }
 
     let radius = HANDLE_SCREEN_SIZE as f32 / 2.;
@@ -3867,7 +3868,7 @@ fn paint_selection(
         paint_fill(
             fill,
             if is_text {
-                gpui::rgb(SELECTION_BLUE).into()
+                gpui::rgb(SELECTION_ACCENT).into()
             } else {
                 gpui::white()
             },
@@ -3880,7 +3881,7 @@ fn paint_selection(
             if is_text {
                 gpui::white()
             } else {
-                gpui::rgb(SELECTION_BLUE).into()
+                gpui::rgb(SELECTION_ACCENT).into()
             },
             window,
         );

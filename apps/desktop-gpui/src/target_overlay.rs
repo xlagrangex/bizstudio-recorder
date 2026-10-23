@@ -1852,8 +1852,8 @@ impl OverlayWindow {
             .border_color(gpui::hsla(0., 0., 1., 0.82))
             .bg(linear_gradient(
                 135.,
-                linear_color_stop(gpui::hsla(0.55, 1., 0.72, 0.4), 0.),
-                linear_color_stop(gpui::hsla(0.62, 1., 0.59, 0.2), 1.),
+                linear_color_stop(gpui::hsla(0.88, 0.8, 0.72, 0.4), 0.),
+                linear_color_stop(gpui::hsla(0.88, 0.72, 0.38, 0.2), 1.),
             ))
             .with_animation("area-selection-hint-box", animation(), |this, progress| {
                 let progress = selection_drag_progress(progress);
@@ -2198,8 +2198,7 @@ impl OverlayWindow {
             }))
     }
 
-    /// The start affordance: `h-11 rounded-full bg-linear-to-r from-blue-10 to
-    /// blue-11` (`blue-9`/`blue-10` in the dark theme), mode icon, two-line
+    /// The start affordance: an `h-11` brand-gradient pill, mode icon, two-line
     /// label, and the mode caret on a divided trailing block.
     fn render_start_button(
         &self,
@@ -2209,11 +2208,6 @@ impl OverlayWindow {
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let theme = self.theme;
-        let (from, to) = if theme.is_dark() {
-            (theme.blue_9, theme.blue_10)
-        } else {
-            (theme.blue_10, theme.blue_11)
-        };
         let needs_sign_in = self.needs_sign_in(mode, cx);
         let label = match mode {
             Mode::Screenshot => "Take Screenshot",
@@ -2243,16 +2237,18 @@ impl OverlayWindow {
             .overflow_hidden()
             .flex_row()
             .h(px(44.))
+            .relative()
             .rounded_full()
             .text_color(gpui::white())
-            // `bg-linear-to-r from-blue-10 via-blue-10 to-blue-11`: the via
-            // stop sits at 50% with the from colour, so the ramp only starts
-            // halfway.
-            .bg(linear_gradient(
-                90.,
-                linear_color_stop(Hsla::from(from), 0.5),
-                linear_color_stop(Hsla::from(to), 1.0),
-            ))
+            .bg(crate::theme::brand_base(crate::theme::BRAND_VIVID))
+            .shadow(crate::theme::brand_shadow())
+            .child(
+                div()
+                    .absolute()
+                    .inset_0()
+                    .rounded(px(22.))
+                    .bg(crate::theme::brand_overlay(crate::theme::BRAND_VIVID)),
+            )
             .child(
                 div()
                     .id("overlay-start-action")

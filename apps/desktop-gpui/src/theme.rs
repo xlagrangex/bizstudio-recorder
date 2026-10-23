@@ -7,7 +7,8 @@
 //! so regenerating this from a Radix crate would silently change the palette.
 
 use gpui::{
-    App, BoxShadow, Context, Global, Hsla, Rgba, Window, WindowAppearance, point, px, rgb, rgba,
+    App, Background, BoxShadow, Context, Global, Hsla, InteractiveElement, ParentElement, Pixels,
+    Rgba, Styled, Window, WindowAppearance, point, prelude::FluentBuilder, px, rgb, rgba,
 };
 
 use crate::platform::{self, ForcedAppearance, MaterialKind};
@@ -480,9 +481,9 @@ impl EditorPalette {
             ctl: rgba(0x0000000b),
             ctl_hover: rgba(0x00000013),
             ctl_active: rgba(0x0000001c),
-            accent: rgb(0x007aff),
-            accent_2: rgb(0x2b8cff),
-            playhead: rgb(0xff3b30),
+            accent: rgb(0xa51b80),
+            accent_2: rgb(0xc02a97),
+            playhead: rgb(0xa51b80),
             thumb: rgb(0xffffff),
             seg_tint: 0.13,
             seg_line: 0.34,
@@ -509,9 +510,9 @@ impl EditorPalette {
             ctl: rgba(0xffffff0f),
             ctl_hover: rgba(0xffffff17),
             ctl_active: rgba(0xffffff21),
-            accent: rgb(0x0a84ff),
-            accent_2: rgb(0x3d9bff),
-            playhead: rgb(0xff453a),
+            accent: rgb(0xc2289a),
+            accent_2: rgb(0xd64daf),
+            playhead: rgb(0xc2289a),
             thumb: rgb(0xe8e8ea),
             seg_tint: 0.20,
             seg_line: 0.42,
@@ -632,6 +633,80 @@ pub fn thumb_shadow() -> Vec<BoxShadow> {
     }]
 }
 
+/// The Bizstudio CTA gradient (`135deg`, stops at 0/50/100 %): `VIVID` at
+/// rest, `DEEP` under the pointer.
+pub const BRAND_VIVID: [u32; 3] = [0x2f6bff, 0xe21ecf, 0xff7a1a];
+pub const BRAND_DEEP: [u32; 3] = [0x1b4088, 0xa51b80, 0xda5713];
+const BRAND_ANGLE: f32 = 135.;
+
+/// gpui gradients carry two stops, so the three-stop brand ramp is painted as
+/// this base (first half) under `brand_overlay` (second half fading in).
+pub fn brand_base(stops: [u32; 3]) -> Background {
+    gpui::linear_gradient(
+        BRAND_ANGLE,
+        gpui::linear_color_stop(rgb(stops[0]), 0.),
+        gpui::linear_color_stop(rgb(stops[1]), 0.5),
+    )
+}
+
+pub fn brand_overlay(stops: [u32; 3]) -> Background {
+    gpui::linear_gradient(
+        BRAND_ANGLE,
+        gpui::linear_color_stop(rgba_alpha(rgb(stops[2]), 0.), 0.5),
+        gpui::linear_color_stop(rgb(stops[2]), 1.),
+    )
+}
+
+/// `inset 0 0 7px #ffffff59, 0 16px 24px #b13ec247`, scaled down for
+/// controls a third the size of the website's buttons.
+pub fn brand_shadow() -> Vec<BoxShadow> {
+    vec![
+        BoxShadow {
+            color: rgba(0xffffff59).into(),
+            offset: point(px(0.), px(0.)),
+            blur_radius: px(5.),
+            spread_radius: px(0.),
+            inset: true,
+        },
+        BoxShadow {
+            color: rgba(0xb13ec247).into(),
+            offset: point(px(0.), px(5.)),
+            blur_radius: px(10.),
+            spread_radius: px(-2.),
+            inset: false,
+        },
+    ]
+}
+
+/// Paints `el` with the brand gradient, deepening on hover when `hoverable`.
+/// Call before adding the element's content, and after any other `.hover`
+/// (gpui keeps only the last): the overlay is an absolute first child so the
+/// label paints over it. `radius` is the caller's rounding, `None` for a pill.
+pub fn brand_fill<E>(el: E, group: &'static str, radius: Option<Pixels>, hoverable: bool) -> E
+where
+    E: Styled + ParentElement + InteractiveElement + FluentBuilder,
+{
+    let overlay = gpui::div()
+        .absolute()
+        .inset_0()
+        .map(|this| match radius {
+            Some(radius) => this.rounded(radius),
+            None => this.rounded_full(),
+        })
+        .bg(brand_overlay(BRAND_VIVID));
+    el.group(group)
+        .relative()
+        .bg(brand_base(BRAND_VIVID))
+        .text_color(gpui::white())
+        .shadow(brand_shadow())
+        .when(hoverable, |this| {
+            this.hover(|style| style.bg(brand_base(BRAND_DEEP)))
+        })
+        .child(overlay.when(hoverable, |this| {
+            this.group_hover(group, |style| style.bg(brand_overlay(BRAND_DEEP)))
+        }))
+}
+
 /// `color-mix(in srgb, b <t>, a)`: straight sRGB interpolation, which is what
 /// the CSS side does.
 pub fn mix(a: Rgba, b: Rgba, t: f32) -> Rgba {
@@ -694,25 +769,25 @@ impl Theme {
             gray_1: rgb(0xfcfcfc),
             gray_2: rgb(0xf9f9f9),
             gray_3: rgb(0xf0f0f0),
-            gray_4: rgb(0xe8e8e8),
+            gray_4: rgb(0xe5e5e5),
             gray_5: rgb(0xe0e0e0),
-            gray_6: rgb(0xd9d9d9),
+            gray_6: rgb(0xd3d3d3),
             gray_7: rgb(0xcecece),
             gray_8: rgb(0xbbbbbb),
             gray_9: rgb(0x8d8d8d),
             gray_10: rgb(0x838383),
-            gray_11: rgb(0x646464),
-            gray_12: rgb(0x202020),
+            gray_11: rgb(0x797979),
+            gray_12: rgb(0x131313),
 
-            blue_3: rgb(0xe6f4fe),
-            blue_4: rgb(0xd5efff),
-            blue_5: rgb(0xc2e5ff),
-            blue_6: rgb(0xacd8fc),
-            blue_8: rgb(0x5eb1ef),
-            blue_9: rgb(0x0090ff),
-            blue_10: rgb(0x0588f0),
-            blue_11: rgb(0x0d74ce),
-            blue_12: rgb(0x113264),
+            blue_3: rgb(0xfbeaf6),
+            blue_4: rgb(0xf7dcf0),
+            blue_5: rgb(0xf1c9e7),
+            blue_6: rgb(0xe8b0da),
+            blue_8: rgb(0xcf6fb8),
+            blue_9: rgb(0xa51b80),
+            blue_10: rgb(0x931772),
+            blue_11: rgb(0x8a1569),
+            blue_12: rgb(0x4a0b38),
 
             red_2: rgb(0xfff7f7),
             red_3: rgb(0xfeebec),
@@ -725,8 +800,8 @@ impl Theme {
             amber_6: rgb(0xf3d673),
             amber_11: rgb(0xab6400),
 
-            blue_100: rgb(0xadc9ff),
-            blue_500: rgb(0x3666c5),
+            blue_100: rgb(0xf3d3ea),
+            blue_500: rgb(0xa51b80),
             red_300: rgb(0xff4766),
 
             // `theme.css:38-44`.
@@ -760,15 +835,15 @@ impl Theme {
             gray_11: rgb(0xa1a1a1),
             gray_12: rgb(0xeeeeee),
 
-            blue_3: rgb(0x0d2847),
-            blue_4: rgb(0x003362),
-            blue_5: rgb(0x004074),
-            blue_6: rgb(0x104d87),
-            blue_8: rgb(0x2870bd),
-            blue_9: rgb(0x0090ff),
-            blue_10: rgb(0x3b9eff),
-            blue_11: rgb(0x70b8ff),
-            blue_12: rgb(0xc2e6ff),
+            blue_3: rgb(0x2a1024),
+            blue_4: rgb(0x3a1231),
+            blue_5: rgb(0x4a153e),
+            blue_6: rgb(0x5c1a4d),
+            blue_8: rgb(0x8a2a73),
+            blue_9: rgb(0xa51b80),
+            blue_10: rgb(0xb8278f),
+            blue_11: rgb(0xe58ac9),
+            blue_12: rgb(0xf7d3ec),
 
             red_2: rgb(0x201314),
             red_3: rgb(0x3b1219),
@@ -781,8 +856,8 @@ impl Theme {
             amber_6: rgb(0x5c3d05),
             amber_11: rgb(0xffca16),
 
-            blue_100: rgb(0x243352),
-            blue_500: rgb(0x0a84ff),
+            blue_100: rgb(0x3a1231),
+            blue_500: rgb(0xc2289a),
             red_300: rgb(0xff4766),
 
             // `theme.css:101-107`.
@@ -1133,18 +1208,14 @@ impl Theme {
         color
     }
 
-    /// Tailwind v4's stock `blue-600` -- the target-select overlay's highlight
-    /// wash (`bg-blue-600/40`). Not a Radix step and not one of the app's own
-    /// `--blue-*` overrides: the overlay reaches straight for the Tailwind
-    /// palette there.
-    pub const TARGET_HIGHLIGHT: u32 = 0x155dfc;
+    /// The target-select overlay's highlight wash (`bg-blue-600/40` upstream),
+    /// pinned to the Bizstudio magenta rather than a theme step so it reads the
+    /// same over any wallpaper.
+    pub const TARGET_HIGHLIGHT: u32 = 0xa51b80;
 
-    /// `--macos-settings-accent: AccentColor` -- the selected sidebar icon and
-    /// the checked toggle. `AccentColor` is the system-wide accent the user
-    /// picked in System Settings; gpui exposes no query for it, so this is
-    /// macOS's default blue. A user on a non-blue accent sees blue here and
-    /// their own colour in the Tauri app (README deviation).
-    pub const SETTINGS_ACCENT: u32 = 0x007aff;
+    /// The selected settings sidebar icon and the checked toggle. Upstream
+    /// follows the macOS `AccentColor`; Bizstudio pins its brand magenta.
+    pub const SETTINGS_ACCENT: u32 = 0xa51b80;
 
     /// The TSX has a `#DCDCDC` unfocused state, but it hangs off an
     /// `onFocusChanged` the non-activating main panel never delivers -- the

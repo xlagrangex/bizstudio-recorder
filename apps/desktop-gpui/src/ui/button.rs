@@ -23,7 +23,8 @@ pub type ClickHandler = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static
 pub enum ButtonVariant {
     /// `bg-gray-12 text-gray-1`, `disabled:bg-gray-6 disabled:text-gray-9`.
     Primary,
-    /// `bg-blue-600 text-white border border-blue-800`.
+    /// The Bizstudio brand gradient pill (`Theme::brand_fill`); upstream's
+    /// `bg-blue-600`. Surfaces that set their own fill keep it.
     Blue,
     /// `bg-red-500 text-white hover:bg-red-600`.
     Destructive,
@@ -132,6 +133,7 @@ pub struct Button {
     dim_disabled: bool,
     on_click: Option<ClickHandler>,
     on_open: Option<OpenHandler>,
+    brand: bool,
 }
 
 impl Button {
@@ -160,6 +162,7 @@ impl Button {
             dim_disabled: false,
             on_click: None,
             on_open: None,
+            brand: variant == ButtonVariant::Blue,
         }
     }
 
@@ -346,14 +349,12 @@ fn radix_paint(theme: &Theme, variant: ButtonVariant) -> ButtonPaint {
             border: None,
             hover_border: None,
         },
-        // `bg-blue-600 ... hover:bg-blue-700`: Tailwind's blue, not Radix's --
-        // the two scales differ and the class is `blue-600`, not `blue-9`.
         ButtonVariant::Blue => ButtonPaint {
-            bg: Some(gpui::rgb(0x2563eb).into()),
-            hover_bg: Some(gpui::rgb(0x1d4ed8).into()),
+            bg: None,
+            hover_bg: None,
             text: gpui::white(),
             hover_text: None,
-            border: Some(gpui::rgb(0x1e40af).into()),
+            border: None,
             hover_border: None,
         },
         ButtonVariant::Destructive => ButtonPaint {
@@ -426,6 +427,7 @@ impl RenderOnce for Button {
             height,
             on_click,
             on_open,
+            brand,
         } = self;
 
         let icon_color = paint.text;
@@ -473,6 +475,9 @@ impl RenderOnce for Button {
                         None => style,
                     }
                 })
+            })
+            .when(brand && paint.bg.is_none(), |this| {
+                crate::theme::brand_fill(this, "brand-button", radius, !disabled)
             })
             .children(icon.map(|icon| {
                 svg()

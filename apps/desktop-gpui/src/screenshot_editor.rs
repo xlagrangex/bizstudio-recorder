@@ -34,9 +34,9 @@ use cap_rendering::{
     RenderVideoConstants, RenderedFrame, RendererLayers, ZoomTransformTimeline,
 };
 use gpui::{
-    AnyElement, App, AppContext as _, Bounds, Context, Entity, FontWeight, Hsla,
-    InteractiveElement as _, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent,
-    MouseUpEvent, ParentElement as _, Pixels, Point, Render, RenderImage,
+    Animation, AnimationExt as _, AnyElement, App, AppContext as _, Bounds, Context, Entity,
+    FontWeight, Hsla, InteractiveElement as _, IntoElement, MouseButton, MouseDownEvent,
+    MouseMoveEvent, MouseUpEvent, ParentElement as _, Pixels, Point, Render, RenderImage,
     StatefulInteractiveElement as _, Styled, StyledImage as _, Window, WindowHandle, canvas, div,
     img, linear_color_stop, linear_gradient, prelude::FluentBuilder as _, px, svg,
 };
@@ -4287,8 +4287,8 @@ impl ScreenshotEditorWindow {
     }
 
     /// `ScreenshotEditorSkeleton` (`screenshot-editor-skeleton.tsx`): the
-    /// header's three clusters as `rounded-lg` placeholders, and the Cap logo
-    /// spinning over a flat preview.
+    /// header's three clusters as `rounded-lg` placeholders, and the mascot
+    /// over a flat preview.
     fn render_skeleton(&self, _window: &Window) -> impl IntoElement {
         let theme = self.theme;
         let block = move |width: f32| {
@@ -4413,7 +4413,7 @@ impl ScreenshotEditorWindow {
                         .child(div().w(px(80.)).h(px(8.)).rounded_full().bg(theme.gray_4))
                         .child(block(36.)),
                 )
-                .child(spinning_logo(&theme)),
+                .child(loading_mascot()),
         )
     }
 }
@@ -4600,22 +4600,22 @@ fn mini_checker() -> Vec<AnyElement> {
     .collect()
 }
 
-/// The skeleton's `<div class="animate-spin"><IconCapLogo /></div>`. The app
-/// has no bare logo glyph -- only the full lockup -- so the wordmark would spin
-/// with it; the lockup is drawn still instead, at the skeleton's opacity
-/// (README deviation).
-fn spinning_logo(theme: &Theme) -> impl IntoElement {
+/// The skeleton's spinning logo, replaced by the full-colour mascot breathing
+/// in place: `svg()` would flatten it to a tinted silhouette, so it goes
+/// through `img()`.
+fn loading_mascot() -> impl IntoElement {
     div().flex().items_center().justify_center().child(
-        svg()
-            .path(if theme.is_dark() {
-                "icons/logo-full-dark.svg"
-            } else {
-                "icons/logo-full.svg"
-            })
-            .w(px(129.))
-            .h(px(40.))
-            .opacity(0.5)
-            .text_color(theme.gray_8),
+        img("images/mascot.png")
+            .w(px(48.))
+            .h(px(48.))
+            .with_animation(
+                "screenshot-skeleton-mascot",
+                Animation::new(Duration::from_millis(1600)).repeat(),
+                |this, progress| {
+                    let wave = (progress * std::f32::consts::TAU).cos();
+                    this.opacity(0.75 - 0.25 * wave)
+                },
+            ),
     )
 }
 

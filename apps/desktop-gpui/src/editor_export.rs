@@ -1726,21 +1726,13 @@ impl EditorWindow {
             ),
         };
         let busy = ui.phase.is_busy();
-        let (bg, hover_bg, text) = if primary {
-            (
-                Hsla::from(editor.accent),
-                Hsla::from(editor.accent_2),
-                gpui::white(),
-            )
+        let text = if primary {
+            gpui::white()
         } else {
-            (
-                Hsla::from(editor.ctl),
-                Hsla::from(editor.ctl_hover),
-                Hsla::from(editor.text_1),
-            )
+            Hsla::from(editor.text_1)
         };
 
-        div()
+        let cta = div()
             .id("export-cta")
             .tab_index(0)
             .w_full()
@@ -1750,28 +1742,25 @@ impl EditorWindow {
             .items_center()
             .justify_center()
             .gap(px(8.))
-            .rounded(px(10.))
-            .bg(bg)
+            .rounded_full()
             .text_size(px(13.))
             .font_weight(FontWeight::MEDIUM)
             .text_color(text)
-            .when(primary, |this| {
-                this.shadow(vec![gpui::BoxShadow {
-                    color: gpui::hsla(0., 0., 1., 0.18),
-                    offset: gpui::point(px(0.), px(1.)),
-                    blur_radius: px(0.),
-                    spread_radius: px(0.),
-                    inset: true,
-                }])
-            })
             .when(busy, |this| this.opacity(0.5))
             .when(!busy, |this| {
                 this.cursor_pointer()
-                    .hover(move |style| style.bg(hover_bg))
                     .on_click(cx.listener(|this, _, window, cx| this.start_export(window, cx)))
             })
-            .children(icon.map(|icon| svg().path(icon).size(px(16.)).text_color(text)))
-            .child(label)
+            .when(!primary, |this| {
+                this.bg(Hsla::from(editor.ctl)).when(!busy, |this| {
+                    this.hover(move |style| style.bg(Hsla::from(editor.ctl_hover)))
+                })
+            });
+        cta.when(primary, |this| {
+            crate::theme::brand_fill(this, "export-cta", None, !busy)
+        })
+        .children(icon.map(|icon| svg().path(icon).size(px(16.)).text_color(text)))
+        .child(label)
     }
 
     fn export_section(&self, name: &'static str, icon: &'static str) -> ui::Field {

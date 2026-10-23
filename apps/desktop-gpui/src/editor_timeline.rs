@@ -178,7 +178,7 @@ pub const MINIMAP_MAX_WIDTH: f32 = 78.;
 /// in both themes exactly as they are there
 /// (`apps/desktop/src/styles/theme.css`).
 pub mod track_color {
-    pub const CLIP: u32 = 0x3b82f6;
+    pub const CLIP: u32 = 0x2f6bff;
     pub const ZOOM: u32 = 0x64748b;
     pub const CAPTION: u32 = 0x0ea5e9;
     pub const KEYBOARD: u32 = 0xf97316;

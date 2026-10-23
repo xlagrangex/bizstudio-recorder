@@ -9520,20 +9520,12 @@ impl EditorWindow {
             .disabled(true)
     }
 
-    /// The Export button: the one primary control in the editor, a vertical
-    /// `accent-2 -> accent` gradient with a 1px top highlight.
+    /// The Export button: the one primary control in the editor, so it wears
+    /// the brand gradient pill.
     fn render_export_button(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let editor = self.theme.editor;
-        let gradient = |top: gpui::Rgba, bottom: gpui::Rgba| {
-            gpui::linear_gradient(
-                180.,
-                gpui::linear_color_stop(top, 0.),
-                gpui::linear_color_stop(bottom, 1.),
-            )
-        };
-        div()
+        let ready = self.project_ready();
+        let button = div()
             .id("editor-export")
-            .relative()
             .flex()
             .flex_row()
             .items_center()
@@ -9543,37 +9535,12 @@ impl EditorWindow {
             .pr(px(14.))
             .h(px(30.))
             .flex_none()
-            .overflow_hidden()
-            .rounded(px(8.))
-            .when(self.project_ready(), |button| button.cursor_pointer())
-            .when(!self.project_ready(), |button| button.opacity(0.5))
-            .bg(gradient(editor.accent_2, editor.accent))
-            .hover(move |style| {
-                style.bg(gradient(
-                    crate::theme::mix(editor.accent_2, gpui::rgb(0xffffff), 0.10),
-                    crate::theme::mix(editor.accent, gpui::rgb(0xffffff), 0.10),
-                ))
-            })
-            .active(move |style| {
-                style.bg(gradient(
-                    crate::theme::mix(editor.accent_2, gpui::rgb(0x000000), 0.06),
-                    crate::theme::mix(editor.accent, gpui::rgb(0x000000), 0.06),
-                ))
-            })
+            .rounded_full()
+            .when(ready, |button| button.cursor_pointer())
+            .when(!ready, |button| button.opacity(0.5))
             .text_size(px(13.))
-            .font_weight(FontWeight::MEDIUM)
-            .text_color(gpui::white())
-            // gpui has no box-shadow, so the `inset 0 1px 0 rgba(255,255,255,
-            // .22)` highlight is a painted hairline instead.
-            .child(
-                div()
-                    .absolute()
-                    .top_0()
-                    .left_0()
-                    .right_0()
-                    .h(px(1.))
-                    .bg(gpui::hsla(0., 0., 1., 0.22)),
-            )
+            .font_weight(FontWeight::MEDIUM);
+        crate::theme::brand_fill(button, "editor-export", None, ready)
             .child(
                 svg()
                     .path("icons/upload-arrow.svg")
