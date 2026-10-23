@@ -348,7 +348,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Frame-Options", "DENY")
+        # Embedded by the dashboard's Meet Bot page, which shares this origin.
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Content-Security-Policy", "frame-ancestors 'self'")
         for key, value in (extra or {}).items():
             self.send_header(key, value)
         self.end_headers()

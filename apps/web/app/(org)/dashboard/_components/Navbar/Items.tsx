@@ -55,6 +55,7 @@ import { useDashboardContext } from "../../Contexts";
 import {
 	CapIcon,
 	ChartLineIcon,
+	ChatIcon,
 	CodeIcon,
 	CogIcon,
 	ImportIcon,
@@ -104,6 +105,17 @@ const AdminNavItems = ({ toggleMobileNav }: Props) => {
 			icon: <RecordIcon />,
 			subNav: [],
 		},
+		...(buildEnv.NEXT_PUBLIC_IS_CAP !== "true"
+			? [
+					{
+						name: "Meet Bot",
+						href: "/dashboard/meet-bot",
+						ownerOnly: true,
+						icon: <ChatIcon />,
+						subNav: [],
+					},
+				]
+			: []),
 		{
 			name: "Import Media",
 			href: loomImportPageHref(loomImportDestinationFromPathname(pathname)),
