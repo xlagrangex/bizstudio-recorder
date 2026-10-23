@@ -1,6 +1,6 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
-	"productName": "Bizstudio Recorder",
+	"productName": "Bizstudio Rec",
 	"mainBinaryName": "Cap",
 	"identifier": "it.bizstudio.recorder",
 	"plugins": {
@@ -18,7 +18,7 @@
 	},
 	"bundle": {
 		"active": true,
-		"createUpdaterArtifacts": true,
+		"createUpdaterArtifacts": false,
 		"targets": "all",
 		"category": "Video",
 		"longDescription": "Bizstudio Recorder: registra, condividi e porta ogni video nel second brain Bizstudio. Basato su Cap (AGPLv3).",
