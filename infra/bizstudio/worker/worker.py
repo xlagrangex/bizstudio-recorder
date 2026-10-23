@@ -33,6 +33,7 @@ DEFAULT_NAME = re.compile(
 TERMINAL = {"done", "no_audio", "skipped", "failed"}
 
 running = True
+last_skip: dict[str, str] = {}
 
 
 class Permanent(Exception):
@@ -145,13 +146,15 @@ def load_videos(db) -> list[dict]:
     return rows
 
 
-def upload_settled(video: dict) -> bool:
+def wait_reason(video: dict) -> str | None:
     if video["uploadPhase"] not in (None, "complete"):
-        return False
+        return f"upload phase {video['uploadPhase']}"
     if video["metadata"].get("editProcessing"):
-        return False
+        return "edit in progress"
     updated = video["updatedAt"].replace(tzinfo=timezone.utc)
-    return (datetime.now(timezone.utc) - updated).total_seconds() >= SETTLE_SECONDS
+    if (datetime.now(timezone.utc) - updated).total_seconds() < SETTLE_SECONDS:
+        return f"changed less than {SETTLE_SECONDS}s ago"
+    return None
 
 
 def fetch_source(client, video: dict, workdir: Path) -> Path:
@@ -225,7 +228,9 @@ def stage_enrich(db, video: dict, transcript: dict, workdir: Path) -> dict:
             (ai["title"], ai["summary"], json.dumps(ai["chapters"], ensure_ascii=False), video["id"]),
         )
         renamed = False
-        if DEFAULT_NAME.match(video["name"] or "") and not video["metadata"].get("titleManuallyEdited"):
+        name = video["name"] or ""
+        ours = name == video["metadata"].get("aiTitle")
+        if (DEFAULT_NAME.match(name) or ours) and not video["metadata"].get("titleManuallyEdited"):
             renamed = cur.execute("UPDATE videos SET name = %s WHERE id = %s AND name = %s", (ai["title"], video["id"], video["name"])) > 0
     ai["renamed"] = renamed
     cached.write_text(json.dumps(ai, ensure_ascii=False))
@@ -259,7 +264,7 @@ def process(conn, db, client, video: dict, job: sqlite3.Row | None) -> None:
         log(video_id, f"no audio: {reason}")
         return
     set_job(conn, video_id, stage="transcribed", cost_usd=transcript["cost"])
-    log(video_id, f"transcribed {transcript['duration']:.0f}s audio in {transcript.get('elapsed', 0)}s, "
+    log(video_id, f"transcribed {transcript['duration']:.0f}s audio ({transcript.get('speech_seconds', '?')}s speech) in {transcript.get('elapsed', 0)}s, "
                   f"{len(transcript['segments'])} segments, ${transcript['cost']:.4f} via {','.join(transcript['models'])}")
 
     ai = stage_enrich(db, video, transcript, workdir)
@@ -289,6 +294,19 @@ def fail(conn, db, video: dict, job: sqlite3.Row | None, error: Exception) -> No
     log(video["id"], f"attempt {attempts} failed, retry in {delay}s: {message}")
 
 
+def skip_reason(video: dict, job: sqlite3.Row | None) -> str | None:
+    if job and job["stage"] in TERMINAL:
+        return f"already {job['stage']}"
+    if not job and video["transcriptionStatus"] in UNTOUCHED_STATUSES:
+        return f"transcriptionStatus {video['transcriptionStatus']} set outside the worker"
+    if video["source"].get("type") not in PROCESSABLE_SOURCES:
+        return f"unsupported source {video['source'].get('type')}"
+    if job and job["next_attempt_at"] > time.time():
+        return f"retry backoff (attempt {job['attempts']})"
+    waiting = wait_reason(video)
+    return f"waiting: {waiting}" if waiting else None
+
+
 def tick(conn) -> None:
     db = mysql()
     try:
@@ -300,16 +318,14 @@ def tick(conn) -> None:
             if ONLY_VIDEO_IDS and video["id"] not in ONLY_VIDEO_IDS:
                 continue
             job = jobs.get(video["id"])
-            if job and job["stage"] in TERMINAL:
+            reason = skip_reason(video, job)
+            if reason:
+                if last_skip.get(video["id"]) != reason:
+                    log(video["id"], f"skip: {reason}")
+                    last_skip[video["id"]] = reason
                 continue
-            if not job and video["transcriptionStatus"] in UNTOUCHED_STATUSES:
-                continue
-            if video["source"].get("type") not in PROCESSABLE_SOURCES:
-                continue
-            if job and job["next_attempt_at"] > time.time():
-                continue
-            if not upload_settled(video):
-                continue
+            last_skip.pop(video["id"], None)
+            log(video["id"], f"processing ({video['source'].get('type')}, status={video['transcriptionStatus']}, stage={job['stage'] if job else 'new'})")
             try:
                 process(conn, db, client, video, job)
             except Exception as error:

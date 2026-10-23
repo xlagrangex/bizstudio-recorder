@@ -12,7 +12,8 @@ TRANSCRIBE_MODELS = os.environ.get(
 TEXT_MODELS = os.environ.get(
     "TEXT_MODELS", "google/gemini-3.1-flash-lite,qwen/qwen3.8-omni-flash"
 ).split(",")
-CHUNK_SECONDS = int(os.environ.get("CHUNK_SECONDS", "300"))
+CHUNK_SECONDS = int(os.environ.get("CHUNK_SECONDS", "90"))
+SPEECH_FLOOR_DB = int(os.environ.get("SPEECH_FLOOR_DB", "-50"))
 VOCABULARY = os.environ.get(
     "WORKER_VOCABULARY",
     "Bizstudio, Bizstudio Recorder, Loom, Vincenzo Petrone, Squilloo, Hermes, OpenRouter, Claude, Claude Code, n8n, LinkedIn",
@@ -59,18 +60,48 @@ def extract_audio(source: Path, workdir: Path) -> tuple[Path, float]:
     return audio, probe_duration(audio)
 
 
-def split_chunks(audio: Path, duration: float, workdir: Path) -> list[tuple[Path, float, float]]:
-    chunks = []
-    start = 0.0
-    index = 0
-    while start < duration - 0.5:
-        length = min(CHUNK_SECONDS, duration - start)
-        chunk = workdir / f"chunk_{index:03d}.mp3"
-        if not chunk.exists():
-            run(["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.3f}", "-t", f"{length:.3f}", "-i", str(audio), "-c", "copy", str(chunk)])
-        chunks.append((chunk, start, length))
-        start += length
-        index += 1
+def speech_islands(audio: Path, duration: float) -> list[tuple[float, float]]:
+    stats = run(["ffmpeg", "-v", "info", "-i", str(audio), "-af", f"silencedetect=noise={SPEECH_FLOOR_DB}dB:d=1", "-f", "null", "-"])
+    silences, opened = [], None
+    for kind, value in re.findall(r"silence_(start|end): (-?[\d.]+)", stats):
+        if kind == "start":
+            opened = max(float(value), 0.0)
+        elif opened is not None:
+            silences.append((opened, float(value)))
+            opened = None
+    if opened is not None:
+        silences.append((opened, duration))
+    islands, cursor = [], 0.0
+    for silence_start, silence_end in silences:
+        if silence_start > cursor:
+            islands.append((cursor, silence_start))
+        cursor = max(cursor, silence_end)
+    if cursor < duration:
+        islands.append((cursor, duration))
+    merged: list[list[float]] = []
+    for lo, hi in islands:
+        lo, hi = max(lo - 0.4, 0.0), min(hi + 0.4, duration)
+        if merged and lo - merged[-1][1] < 1.0:
+            merged[-1][1] = hi
+        elif hi - lo >= 0.6:
+            merged.append([lo, hi])
+    return [(lo, hi) for lo, hi in merged]
+
+
+def plan_chunks(islands: list[tuple[float, float]]) -> list[tuple[float, float, list[tuple[float, float]]]]:
+    pieces = []
+    for lo, hi in islands:
+        while hi - lo > CHUNK_SECONDS:
+            pieces.append((lo, lo + CHUNK_SECONDS))
+            lo += CHUNK_SECONDS
+        pieces.append((lo, hi))
+    chunks: list[tuple[float, float, list[tuple[float, float]]]] = []
+    for lo, hi in pieces:
+        if chunks and hi - chunks[-1][0] <= CHUNK_SECONDS:
+            start, _, members = chunks[-1]
+            chunks[-1] = (start, hi, [*members, (lo, hi)])
+        else:
+            chunks.append((lo, hi, [(lo, hi)]))
     return chunks
 
 
@@ -90,28 +121,64 @@ def fix_vocabulary(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def _normalize(raw_segments, offset: float, length: float) -> list[dict]:
+def _timestamps_plausible(segments: list[dict], length: float) -> bool:
+    if not segments:
+        return True
+    starts = [seg["start"] for seg in segments]
+    if any(b < a for a, b in zip(starts, starts[1:])):
+        return False
+    if any(seg["start"] > length + 1 or seg["end"] > length + 1 for seg in segments):
+        return False
+    return len(segments) < 3 or len(set(starts)) >= len(segments) * 0.6
+
+
+def _spread_over_speech(segments: list[dict], speech: list[tuple[float, float]]) -> None:
+    total = sum(hi - lo for lo, hi in speech) or 1.0
+    words = [max(len(seg["text"].split()), 1) for seg in segments]
+    word_total = sum(words)
+
+    def at(fraction: float) -> float:
+        remaining = fraction * total
+        for lo, hi in speech:
+            if remaining <= hi - lo:
+                return lo + remaining
+            remaining -= hi - lo
+        return speech[-1][1]
+
+    done = 0
+    for seg, count in zip(segments, words):
+        seg["start"] = at(done / word_total)
+        done += count
+        seg["end"] = at(done / word_total)
+
+
+def _normalize(raw_segments, offset: float, length: float, speech: list[tuple[float, float]]) -> list[dict]:
     segments = []
-    for raw in raw_segments or []:
+    for raw in raw_segments if isinstance(raw_segments, list) else []:
         try:
             text = fix_vocabulary(str(raw.get("text", "")))
-            start = min(max(_seconds(raw.get("start", 0)), 0.0), length)
-            end = min(max(_seconds(raw.get("end", start)), start), length)
+            start, end = _seconds(raw.get("start", 0)), _seconds(raw.get("end", 0))
         except (TypeError, ValueError, AttributeError):
             continue
-        if text:
+        if re.search(r"\w", re.sub(r"\[[^\]]*\]|\([^)]*\)", "", text)):
             segments.append({"start": start, "end": end, "text": text})
-    segments.sort(key=lambda s: s["start"])
+    relative_speech = [(lo - offset, hi - offset) for lo, hi in speech]
+    if not _timestamps_plausible(segments, length):
+        _spread_over_speech(segments, relative_speech)
     for i, seg in enumerate(segments):
+        seg["start"] = min(max(seg["start"], 0.0), length)
         next_start = segments[i + 1]["start"] if i + 1 < len(segments) else length
+        seg["end"] = min(max(seg["end"], seg["start"]), length)
         if seg["end"] <= seg["start"] + 0.2:
-            seg["end"] = min(seg["start"] + max(1.0, len(seg["text"].split()) * 0.4), max(next_start, seg["start"] + 0.5))
+            seg["end"] = min(seg["start"] + max(1.0, len(seg["text"].split()) * 0.4), max(next_start, seg["start"] + 0.5), length)
         seg["start"] = round(seg["start"] + offset, 3)
         seg["end"] = round(seg["end"] + offset, 3)
     return segments
 
 
-def transcribe_chunk(chunk: Path, offset: float, length: float, cache: Path) -> tuple[list[dict], float, str]:
+def transcribe_chunk(audio: Path, offset: float, length: float, speech: list[tuple[float, float]], workdir: Path) -> tuple[list[dict], float, str]:
+    chunk = workdir / f"chunk_{int(offset * 1000):09d}.mp3"
+    cache = chunk.with_suffix(".json")
     if cache.exists():
         cached = json.loads(cache.read_text())
         return cached["segments"], 0.0, cached["model"]
@@ -121,28 +188,31 @@ def transcribe_chunk(chunk: Path, offset: float, length: float, cache: Path) -> 
         'Rispondi SOLO con JSON: {"language": "it", "segments": [{"start": 0.0, "end": 3.2, "text": "..."}]}.\n'
         "- start/end in secondi (numeri) dall'inizio di QUESTO file audio.\n"
         f"- Segmenti brevi: una frase o al massimo {MAX_CUE_WORDS} parole, mai oltre {MAX_CUE_SECONDS:.0f} secondi.\n"
-        "- Non riassumere, non correggere lo stile, non inventare. Ometti i silenzi. "
+        "- Non riassumere, non correggere lo stile, non inventare. Ometti silenzi, rumori e annotazioni tipo [musica]. "
         'Se non c\'è parlato rispondi {"language": null, "segments": []}.\n'
         '- Il brand si scrive sempre "Bizstudio" (una parola; mai "Biz Studio", "Bistudio", "Business Studio").\n'
         f"- Nomi propri da scrivere esattamente così: {VOCABULARY}."
     )
+    run(["ffmpeg", "-y", "-v", "error", "-ss", f"{offset:.3f}", "-t", f"{length:.3f}", "-i", str(audio), "-c", "copy", str(chunk)])
     parsed, model, cost = chat_json(TRANSCRIBE_MODELS, audio_message(prompt, str(chunk)), max_tokens=32000)
-    segments = _normalize(parsed.get("segments") if isinstance(parsed, dict) else None, offset, length)
+    segments = _normalize(parsed.get("segments") if isinstance(parsed, dict) else None, offset, length, speech)
     cache.write_text(json.dumps({"segments": segments, "model": model, "language": parsed.get("language")}, ensure_ascii=False))
     return segments, cost, model
 
 
 def transcribe(source: Path, workdir: Path) -> dict:
     audio, duration = extract_audio(source, workdir)
+    islands = speech_islands(audio, duration)
     segments, total_cost, models = [], 0.0, set()
-    for chunk, offset, length in split_chunks(audio, duration, workdir):
-        chunk_segments, cost, model = transcribe_chunk(chunk, offset, length, chunk.with_suffix(".json"))
+    for start, end, speech in plan_chunks(islands):
+        chunk_segments, cost, model = transcribe_chunk(audio, start, end - start, speech, workdir)
         segments.extend(chunk_segments)
         total_cost += cost
         models.add(model)
     if not segments:
         raise NoAudio("no speech detected")
-    return {"segments": segments, "duration": duration, "cost": total_cost, "models": sorted(models)}
+    speech_seconds = round(sum(hi - lo for lo, hi in islands), 1)
+    return {"segments": segments, "duration": duration, "speech_seconds": speech_seconds, "cost": total_cost, "models": sorted(models)}
 
 
 def _split_long(segment: dict) -> list[dict]:
