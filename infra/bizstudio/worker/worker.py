@@ -30,6 +30,10 @@ UNTOUCHED_STATUSES = {"COMPLETE", "SKIPPED", "NO_AUDIO", "ERROR"}
 DEFAULT_NAME = re.compile(
     r"^(?:(?:Cap|Bizstudio(?: Recorder)?) (?:Recording|Screenshot) - .+|My Video|Untitled(?: Video)?)$"
 )
+MEET_PREFIX = "Meet – "
+MEET_DEFAULT_NAME = re.compile(
+    r"^Meet\s*[–—-]\s*\d{1,2}\s+[^\W\d_]+\s+\d{4}(?:,?\s+\d{1,2}[:.]\d{2})?$", re.IGNORECASE
+)
 TERMINAL = {"done", "no_audio", "skipped", "failed"}
 
 running = True
@@ -215,6 +219,17 @@ def stage_transcribe(db, client, video: dict, workdir: Path) -> dict:
     return result
 
 
+def auto_name(name: str, metadata: dict, title: str) -> str | None:
+    if metadata.get("titleManuallyEdited"):
+        return None
+    previous = metadata.get("aiTitle")
+    if MEET_DEFAULT_NAME.match(name) or (previous and name == MEET_PREFIX + previous):
+        return MEET_PREFIX + title
+    if DEFAULT_NAME.match(name) or (previous and name == previous):
+        return title
+    return None
+
+
 def stage_enrich(db, video: dict, transcript: dict, workdir: Path) -> dict:
     cached = workdir / "ai.json"
     if cached.exists():
@@ -228,10 +243,9 @@ def stage_enrich(db, video: dict, transcript: dict, workdir: Path) -> dict:
             (ai["title"], ai["summary"], json.dumps(ai["chapters"], ensure_ascii=False), video["id"]),
         )
         renamed = False
-        name = video["name"] or ""
-        ours = name == video["metadata"].get("aiTitle")
-        if (DEFAULT_NAME.match(name) or ours) and not video["metadata"].get("titleManuallyEdited"):
-            renamed = cur.execute("UPDATE videos SET name = %s WHERE id = %s AND name = %s", (ai["title"], video["id"], video["name"])) > 0
+        new_name = auto_name(video["name"] or "", video["metadata"], ai["title"])
+        if new_name:
+            renamed = cur.execute("UPDATE videos SET name = %s WHERE id = %s AND name = %s", (new_name, video["id"], video["name"])) > 0
     ai["renamed"] = renamed
     cached.write_text(json.dumps(ai, ensure_ascii=False))
     return ai
