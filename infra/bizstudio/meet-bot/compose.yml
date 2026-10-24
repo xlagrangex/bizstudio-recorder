@@ -147,7 +147,7 @@ services:
       MEETBOT_OWNER_ID: cng79m7693kkajy
       MEETBOT_OWNER_EMAIL: vincenzopetronebiz@gmail.com
       MEETBOT_API_TOKEN: ${MEETBOT_API_TOKEN}
-      BOT_NAME: Bizstudio Recorder
+      BOT_NAME: Bizstudio Notetaker
       TZ_NAMES: Europe/Rome
     volumes:
       - ${BIZREC_DATA:-/root/bizstudio-recorder}/meet/bridge:/state

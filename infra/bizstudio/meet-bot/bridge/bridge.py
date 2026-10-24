@@ -1,3 +1,4 @@
+import base64
 import hmac
 import html
 import json
@@ -31,7 +32,9 @@ CAP_URL = os.environ.get("CAP_URL", "http://cap-web:3000").rstrip("/")
 OWNER_ID = os.environ.get("MEETBOT_OWNER_ID", "cng79m7693kkajy")
 OWNER_EMAIL = os.environ.get("MEETBOT_OWNER_EMAIL", "vincenzopetronebiz@gmail.com").lower()
 API_TOKEN = os.environ.get("MEETBOT_API_TOKEN", "")
-BOT_NAME = os.environ.get("BOT_NAME", "Bizstudio Recorder")
+BOT_NAME = os.environ.get("BOT_NAME", "Bizstudio Notetaker")
+BOT_CHAT_MESSAGE = os.environ.get("BOT_CHAT_MESSAGE", "Ciao! Sono il notetaker di Bizstudio, registro e trascrivo questa riunione.")
+ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 POLL_SECONDS = int(os.environ.get("POLL_SECONDS", "20"))
 MAX_UPTIME_SECONDS = int(os.environ.get("MAX_UPTIME_SECONDS", str(3 * 3600)))
 MAX_ATTEMPTS = int(os.environ.get("MAX_ATTEMPTS", "8"))
@@ -41,6 +44,9 @@ LOCAL_TZ = ZoneInfo(os.environ.get("TZ_NAMES", "Europe/Rome"))
 CALENDAR_SYNC_SECONDS = int(os.environ.get("CALENDAR_SYNC_SECONDS", "300"))
 CALENDAR_TICK_SECONDS = int(os.environ.get("CALENDAR_TICK_SECONDS", "20"))
 DASHBOARD_URL = os.environ.get("DASHBOARD_URL", f"{PUBLIC_URL}/dashboard/meet-bot")
+# Attendee only plays https URLs, so the loop goes out through nginx and comes back here.
+BOT_VIDEO_URL = os.environ.get("BOT_VIDEO_URL", f"{PUBLIC_URL}{BASE_PATH}/assets/notetaker.mp4")
+ASSET_TYPES = {"notetaker.mp4": "video/mp4", "notetaker.jpg": "image/jpeg"}
 
 MEETING_URL = re.compile(r"^https://(meet\.google\.com/[a-z]{3,4}-[a-z]{4}-[a-z]{3,4}|teams\.(microsoft|live)\.com/\S+)$")
 ATTENDEE_DONE = {"ended", "fatal_error", "data_deleted"}
@@ -137,12 +143,14 @@ def active_bots() -> list[sqlite3.Row]:
     return rows("stage = 'active'")
 
 
-def launch(meeting_url: str, title: str | None) -> str:
-    meeting_url = meeting_url.strip().split("?")[0] if "meet.google.com" in meeting_url else meeting_url.strip()
-    if not MEETING_URL.match(meeting_url):
-        raise ValueError("Link non valido: incolla il link del Meet (https://meet.google.com/abc-defg-hij).")
-    if active_bots():
-        raise meetcal.Busy("C'è già un bot in una riunione: il server ne regge uno alla volta. Fallo uscire prima.")
+def bot_image() -> dict | None:
+    path = ASSETS_DIR / "notetaker.jpg"
+    if not path.exists():
+        return None
+    return {"type": "image/jpeg", "data": base64.b64encode(path.read_bytes()).decode()}
+
+
+def bot_payload(meeting_url: str, title: str | None) -> dict:
     payload = {
         "meeting_url": meeting_url,
         "bot_name": BOT_NAME,
@@ -150,7 +158,41 @@ def launch(meeting_url: str, title: str | None) -> str:
         "automatic_leave_settings": {"max_uptime_seconds": MAX_UPTIME_SECONDS, "waiting_room_timeout_seconds": 900},
         "metadata": {"source": "meetbot", **({"title": title} if title else {})},
     }
-    response = attendee("POST", "/bots", data=json.dumps(payload))
+    image = bot_image()
+    if image:
+        payload["bot_image"] = image
+    if BOT_CHAT_MESSAGE:
+        payload["bot_chat_message"] = {"to": "everyone", "message": BOT_CHAT_MESSAGE}
+    return payload
+
+
+video_attempts: dict[str, int] = {}
+
+
+def start_video(bot_id: str) -> None:
+    """Swaps the still tile for the looping mascot once the bot is in; the still stays if this fails."""
+    attempts = video_attempts.get(bot_id, 0)
+    if not BOT_VIDEO_URL or attempts < 0 or attempts >= 3:
+        return
+    try:
+        attendee("POST", f"/bots/{bot_id}/output_video",
+                 data=json.dumps({"url": BOT_VIDEO_URL, "loop": True, "mute_video": True}))
+    except Exception as error:
+        if "already playing" not in str(error):
+            video_attempts[bot_id] = attempts + 1
+            log(bot_id, f"video tile not started: {str(error)[:200]}")
+            return
+    video_attempts[bot_id] = -1
+    log(bot_id, "video tile playing")
+
+
+def launch(meeting_url: str, title: str | None) -> str:
+    meeting_url = meeting_url.strip().split("?")[0] if "meet.google.com" in meeting_url else meeting_url.strip()
+    if not MEETING_URL.match(meeting_url):
+        raise ValueError("Link non valido: incolla il link del Meet (https://meet.google.com/abc-defg-hij).")
+    if active_bots():
+        raise meetcal.Busy("C'è già un bot in una riunione: il server ne regge uno alla volta. Fallo uscire prima.")
+    response = attendee("POST", "/bots", data=json.dumps(bot_payload(meeting_url, title)))
     if response.status_code >= 400:
         raise ValueError(f"Attendee ha rifiutato il bot: {response.text[:300]}")
     bot = response.json()
@@ -248,6 +290,8 @@ def step(row: sqlite3.Row) -> None:
         log(bot_id, f"state {row['attendee_state']} -> {state} (recording {bot.get('recording_state')})")
         update(bot_id, attendee_state=state)
     if state not in ATTENDEE_DONE:
+        if state and state.startswith("joined"):
+            start_video(bot_id)
         if time.time() - row["created_at"] > MAX_UPTIME_SECONDS + 3600:
             attendee("POST", f"/bots/{bot_id}/leave")
             update(bot_id, stage="failed", error=f"bloccato in stato {state}, fatto uscire")
@@ -653,10 +697,48 @@ class Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         return path[len(BASE_PATH):] if path.startswith(BASE_PATH) else path
 
+    def send_asset(self, name: str) -> None:
+        """Public and cross-origin: Chrome inside the bot loads it into a crossorigin <video>."""
+        body = (ASSETS_DIR / name).read_bytes()
+        start, end = 0, len(body) - 1
+        match = re.fullmatch(r"bytes=(\d*)-(\d*)", self.headers.get("Range") or "")
+        if match and (match[1] or match[2]):
+            if match[1]:
+                start, end = int(match[1]), min(int(match[2] or end), end)
+            else:
+                start = max(len(body) - int(match[2]), 0)
+            if start > end:
+                self.send_response(416)
+                self.send_header("Content-Range", f"bytes */{len(body)}")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+        partial = bool(match and (match[1] or match[2]))
+        self.send_response(206 if partial else 200)
+        self.send_header("Content-Type", ASSET_TYPES[name])
+        self.send_header("Content-Length", str(end - start + 1))
+        self.send_header("Accept-Ranges", "bytes")
+        if partial:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{len(body)}")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Cache-Control", "public, max-age=3600")
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(body[start:end + 1])
+
+    def do_HEAD(self):
+        name = self.route().removeprefix("/assets/")
+        if name in ASSET_TYPES and (ASSETS_DIR / name).exists():
+            return self.send_asset(name)
+        self.send(404, b"", "text/plain")
+
     def do_GET(self):
         route = self.route()
         if route == "/health":
             return self.send(200, b"ok", "text/plain")
+        name = route.removeprefix("/assets/")
+        if name in ASSET_TYPES and (ASSETS_DIR / name).exists():
+            return self.send_asset(name)
         if not self.gate():
             return
         if route in ("", "/"):
