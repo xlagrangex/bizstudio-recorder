@@ -11149,7 +11149,6 @@ fn dismiss_indexed_sidebar_menu(menu: &mut Option<crate::editor_tabs::OpenMenu>)
         | SidebarMenu::TextWeight(_)
         | SidebarMenu::Camera3DEasing(_) => true,
         SidebarMenu::BackgroundCornerStyle
-        | SidebarMenu::CameraBlur
         | SidebarMenu::CameraShape
         | SidebarMenu::CameraCornerStyle
         | SidebarMenu::AudioStereo
@@ -12412,7 +12411,6 @@ mod tests {
 
         for kind in [
             SidebarMenu::BackgroundCornerStyle,
-            SidebarMenu::CameraBlur,
             SidebarMenu::CameraShape,
             SidebarMenu::CameraCornerStyle,
             SidebarMenu::AudioStereo,

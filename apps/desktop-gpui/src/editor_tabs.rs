@@ -54,11 +54,11 @@ pub const CAMERA_SHAPES: [(CameraShape, &str); 2] = [
 ];
 
 pub const CAMERA_BLUR_MODES: &[(BackgroundBlurMode, &str)] = &[
-    (BackgroundBlurMode::Off, "Off"),
-    (BackgroundBlurMode::Light, "Light Blur"),
-    (BackgroundBlurMode::Heavy, "Heavy Blur"),
+    (BackgroundBlurMode::Off, "Normal"),
+    (BackgroundBlurMode::Light, "Light blur"),
+    (BackgroundBlurMode::Heavy, "Heavy blur"),
     #[cfg(target_os = "macos")]
-    (BackgroundBlurMode::Remove, "Remove Background"),
+    (BackgroundBlurMode::Remove, "Transparent"),
 ];
 
 /// `CORNER_STYLE_OPTIONS` (`:399-402`).
@@ -571,7 +571,6 @@ fn with_keyboard_settings(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SidebarMenu {
     BackgroundCornerStyle,
-    CameraBlur,
     CameraShape,
     CameraCornerStyle,
     AudioStereo,
@@ -613,12 +612,6 @@ impl EditorWindow {
                 .iter()
                 .map(|(style, label)| {
                     ui::MenuItem::new(*label, *style == project.background.rounding_type)
-                })
-                .collect(),
-            SidebarMenu::CameraBlur => CAMERA_BLUR_MODES
-                .iter()
-                .map(|(mode, label)| {
-                    ui::MenuItem::new(*label, *mode == project.camera.background_blur.mode)
                 })
                 .collect(),
             SidebarMenu::CameraShape => CAMERA_SHAPES
@@ -790,19 +783,6 @@ impl EditorWindow {
                         return false;
                     }
                     project.background.rounding_type = style;
-                    true
-                });
-            }
-            SidebarMenu::CameraBlur => {
-                let Some((mode, _)) = CAMERA_BLUR_MODES.get(index) else {
-                    return;
-                };
-                let mode = *mode;
-                self.edit_project("camera-blur", window, cx, move |project| {
-                    if project.camera.background_blur.mode == mode {
-                        return false;
-                    }
-                    project.camera.background_blur = BackgroundBlurConfig { mode };
                     true
                 });
             }
@@ -1216,10 +1196,6 @@ impl EditorWindow {
                 std::mem::discriminant(shape) == std::mem::discriminant(&camera.shape)
             })
             .map_or("Square", |(_, label)| *label);
-        let blur_label = CAMERA_BLUR_MODES
-            .iter()
-            .find(|(mode, _)| *mode == camera.background_blur.mode)
-            .map_or("Off", |(_, label)| *label);
         let corner_label = CORNER_STYLES
             .iter()
             .find(|(style, _)| *style == camera.rounding_type)
@@ -1258,14 +1234,7 @@ impl EditorWindow {
                                 }),
                             ),
                         ))
-                        .child(ui::Subfield::plain(&theme, "Background").child(
-                            div().w(px(160.)).child(self.menu_select(
-                                SidebarMenu::CameraBlur,
-                                "camera-blur",
-                                blur_label,
-                                cx,
-                            )),
-                        ))
+                        .child(self.render_camera_background(cx))
                         .child(ui::Subfield::plain(&theme, "Shape").child(
                             div().w(px(160.)).child(self.menu_select(
                                 SidebarMenu::CameraShape,
@@ -1387,6 +1356,43 @@ impl EditorWindow {
 
     /// The six-dot position grid (`:2996-3053`): a `h-30` card with a dot
     /// pinned into each corner and the two centres.
+    /// Re-segments the raw `camera.mp4` at render time, so any mode can be
+    /// picked after recording regardless of what the bubble showed live.
+    fn render_camera_background(&self, cx: &mut Context<Self>) -> AnyElement {
+        let theme = self.theme;
+        let current = self.project.camera.background_blur.mode;
+        let options = CAMERA_BLUR_MODES
+            .iter()
+            .map(|(mode, label)| ui::SegmentOption::new(*label, *mode == current))
+            .collect();
+
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(8.))
+            .child(ui::Subfield::plain(&theme, "Background"))
+            .child(
+                ui::SegmentedControl::editor(&theme, "camera-background", options)
+                    .stretch()
+                    .item_height(px(26.))
+                    .item_padding(px(4.), px(0.))
+                    .text_size(px(11.5))
+                    .on_select(cx.listener(|this, index: &usize, window, cx| {
+                        let Some(&(mode, _)) = CAMERA_BLUR_MODES.get(*index) else {
+                            return;
+                        };
+                        this.edit_project("camera-blur", window, cx, move |project| {
+                            if project.camera.background_blur.mode == mode {
+                                return false;
+                            }
+                            project.camera.background_blur = BackgroundBlurConfig { mode };
+                            true
+                        });
+                    })),
+            )
+            .into_any_element()
+    }
+
     fn render_camera_position(&self, cx: &mut Context<Self>) -> AnyElement {
         let theme = self.theme;
         let camera = &self.project.camera;
