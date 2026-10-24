@@ -26,6 +26,7 @@ import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import {
 	Check,
+	Clapperboard,
 	Clock,
 	Copy,
 	Download,
@@ -54,6 +55,13 @@ import type { Spaces } from "@/app/(org)/dashboard/dashboard-data";
 import { useCurrentUser } from "@/app/Layout/AuthContext";
 import { SignedImageUrl } from "@/components/SignedImageUrl";
 import { Tooltip } from "@/components/Tooltip";
+import {
+	isOpenInStudioAvailable,
+	OPEN_IN_STUDIO_LABEL,
+	OPEN_IN_STUDIO_TOOLTIP,
+	openInStudioUrl,
+	watchOpenInStudioFallback,
+} from "@/lib/open-in-studio";
 import type { ShareDashboardDestination } from "@/lib/share-dashboard-destination";
 import {
 	copyRichVideoLink,
@@ -1145,6 +1153,23 @@ export const ShareHeader = ({
 												/>
 												View analytics
 											</Button>
+											{isOpenInStudioAvailable() && (
+												<Tooltip content={OPEN_IN_STUDIO_TOOLTIP}>
+													<Button
+														variant="gray"
+														size="xs"
+														href={openInStudioUrl(data.id)}
+														className={clsx(
+															ACTION_BAR_BUTTON_CLASS,
+															"hidden sm:flex",
+														)}
+														onClick={watchOpenInStudioFallback}
+													>
+														<Clapperboard className="size-3.5 text-gray-12" />
+														{OPEN_IN_STUDIO_LABEL}
+													</Button>
+												</Tooltip>
+											)}
 											<DropdownMenu modal={false}>
 												<DropdownMenuTrigger asChild>
 													<Button

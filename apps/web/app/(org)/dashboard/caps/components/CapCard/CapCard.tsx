@@ -33,7 +33,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { Effect, Option } from "effect";
-import { FolderInput } from "lucide-react";
+import { Clapperboard, FolderInput } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type PropsWithChildren, useEffect, useRef, useState } from "react";
@@ -41,6 +41,7 @@ import { toast } from "sonner";
 import { ConfirmationDialog } from "@/app/(org)/dashboard/_components/ConfirmationDialog";
 import { useDashboardContext } from "@/app/(org)/dashboard/Contexts";
 import { useUploadProgress } from "@/app/s/[videoId]/_components/ProgressCircle";
+import { Tooltip } from "@/components/Tooltip";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import {
 	type ImageLoadingStatus,
@@ -48,6 +49,13 @@ import {
 } from "@/components/VideoThumbnail";
 import { useEffectMutation, useRpcClient } from "@/lib/EffectRuntime";
 import type { MoveLocation } from "@/lib/move-items";
+import {
+	isOpenInStudioAvailable,
+	OPEN_IN_STUDIO_LABEL,
+	OPEN_IN_STUDIO_TOOLTIP,
+	openInStudioUrl,
+	watchOpenInStudioFallback,
+} from "@/lib/open-in-studio";
 import { ThumbnailRequest } from "@/lib/Requests/ThumbnailRequest";
 import {
 	copyRichVideoLink,
@@ -554,6 +562,27 @@ export const CapCard = ({
 										<FontAwesomeIcon className="size-3" icon={faChartSimple} />
 										<p className="text-sm text-gray-12">View analytics</p>
 									</DropdownMenuItem>
+									{isOpenInStudioAvailable() && (
+										<Tooltip content={OPEN_IN_STUDIO_TOOLTIP} position="left">
+											<DropdownMenuItem
+												asChild
+												className="flex gap-2 items-center rounded-lg"
+											>
+												<a
+													href={openInStudioUrl(cap.id)}
+													onClick={(e) => {
+														e.stopPropagation();
+														watchOpenInStudioFallback();
+													}}
+												>
+													<Clapperboard className="size-3" />
+													<p className="text-sm text-gray-12">
+														{OPEN_IN_STUDIO_LABEL}
+													</p>
+												</a>
+											</DropdownMenuItem>
+										</Tooltip>
+									)}
 								</>
 							)}
 							<DropdownMenuItem
