@@ -604,7 +604,9 @@ fn parse_linux_reopen_action(raw: &str) -> std::io::Result<crate::deeplink::Deep
         )
     };
     if raw.len() > MAX_FORWARDED_DEEP_LINK_BYTES
-        || !(raw.starts_with("cap-desktop://") || raw.starts_with("cap://"))
+        || !(raw.starts_with("cap-desktop://")
+            || raw.starts_with("cap://")
+            || raw.starts_with("bizrec://"))
     {
         return Err(invalid());
     }
@@ -1122,7 +1124,7 @@ fn is_forwardable_deep_link(url: &str) -> bool {
     !url.is_empty()
         && url.len() <= MAX_FORWARDED_DEEP_LINK_BYTES
         && reqwest::Url::parse(url)
-            .is_ok_and(|parsed| matches!(parsed.scheme(), "cap-desktop" | "cap"))
+            .is_ok_and(|parsed| matches!(parsed.scheme(), "cap-desktop" | "cap" | "bizrec"))
 }
 
 #[cfg(any(windows, target_os = "macos", test))]
@@ -1516,6 +1518,7 @@ mod tests {
         assert!(is_forwardable_deep_link("cap://action?value=test"));
         assert!(!is_forwardable_deep_link("https://cap.so"));
         assert!(!is_forwardable_deep_link("cap-desktop-evil://auth"));
+        assert!(is_forwardable_deep_link("bizrec://open?videoId=abc123"));
         assert!(!is_forwardable_deep_link(&format!(
             "cap://action?value={}",
             "x".repeat(MAX_FORWARDED_DEEP_LINK_BYTES)

@@ -25,7 +25,7 @@ use std::{
 
 use cap_project::{
     InstantRecordingMeta, RecordingMeta, RecordingMetaInner, StudioRecordingMeta,
-    StudioRecordingStatus,
+    StudioRecordingStatus, UploadMeta,
 };
 use cap_recording::{recovery::RecoveryManager, upload_resume::UploadLock};
 use gpui::RenderImage;
@@ -275,6 +275,16 @@ impl RecordingItem {
     pub fn opens_editor(&self) -> bool {
         self.mode == RecordingMode::Studio && self.status.is_complete()
     }
+
+    /// A Studio recording left `InProgress`/`NeedsRemux` by a quit or crash.
+    /// Only meaningful while nothing is recording, which callers check.
+    pub fn needs_recovery(&self) -> bool {
+        self.mode == RecordingMode::Studio
+            && matches!(
+                self.status,
+                RecordingStatus::InProgress | RecordingStatus::NeedsRemux
+            )
+    }
 }
 
 /// `RecordingMetaWithMetadata::new` (`lib.rs:3888-3925`).
@@ -430,6 +440,53 @@ pub fn find_incomplete_recordings_in(
             })
         })
         .collect()
+}
+
+/// Where a web dashboard video lives on this Mac, if it does.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum VideoLookup {
+    Studio(PathBuf),
+    Instant(PathBuf),
+    Missing,
+}
+
+/// The local recording whose share (or in-flight upload) carries `video_id`.
+pub fn find_recording_by_video_id_in(dirs: &[PathBuf], video_id: &str) -> VideoLookup {
+    let owns = |meta: &RecordingMeta| {
+        meta.sharing
+            .as_ref()
+            .is_some_and(|sharing| sharing.id == video_id)
+            || matches!(
+                &meta.upload,
+                Some(
+                    UploadMeta::MultipartUpload { video_id: id, .. }
+                        | UploadMeta::SinglePartUpload { video_id: id, .. }
+                        | UploadMeta::SegmentUpload { video_id: id, .. }
+                ) if id == video_id
+            )
+    };
+    for dir in dirs {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            continue;
+        };
+        for path in entries.flatten().map(|entry| entry.path()) {
+            let Ok(meta) = RecordingMeta::load_for_project(&path) else {
+                continue;
+            };
+            if !owns(&meta) {
+                continue;
+            }
+            return match meta.inner {
+                RecordingMetaInner::Studio(_) => VideoLookup::Studio(path),
+                RecordingMetaInner::Instant(_) => VideoLookup::Instant(path),
+            };
+        }
+    }
+    VideoLookup::Missing
+}
+
+pub fn find_recording_by_video_id(video_id: &str) -> VideoLookup {
+    find_recording_by_video_id_in(&known_recordings_dirs(), video_id)
 }
 
 pub fn find_incomplete_recordings() -> Vec<IncompleteRecordingItem> {
@@ -1361,6 +1418,40 @@ mod tests {
         )
         .unwrap();
         bundle
+    }
+
+    #[test]
+    fn dashboard_video_ids_resolve_to_their_local_recording() {
+        let root = tempfile::tempdir().unwrap();
+        let dirs = vec![root.path().to_path_buf()];
+        let studio = write_studio_bundle(root.path(), "studio", 1);
+        let meta = std::fs::read_to_string(studio.join("recording-meta.json"))
+            .unwrap()
+            .replace(
+                r#""sharing":null"#,
+                r#""sharing":{"id":"abc123","link":"https://x/s/abc123"}"#,
+            );
+        std::fs::write(studio.join("recording-meta.json"), meta).unwrap();
+        let instant = root.path().join("instant.cap");
+        std::fs::create_dir_all(&instant).unwrap();
+        std::fs::write(
+            instant.join("recording-meta.json"),
+            r#"{"pretty_name":"instant","sharing":{"id":"inst9","link":"https://x/s/inst9"},"fps":30}"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            find_recording_by_video_id_in(&dirs, "abc123"),
+            VideoLookup::Studio(studio)
+        );
+        assert_eq!(
+            find_recording_by_video_id_in(&dirs, "inst9"),
+            VideoLookup::Instant(instant)
+        );
+        assert_eq!(
+            find_recording_by_video_id_in(&dirs, "nope"),
+            VideoLookup::Missing
+        );
     }
 
     fn write_screenshot_bundle(dir: &Path, name: &str) -> PathBuf {

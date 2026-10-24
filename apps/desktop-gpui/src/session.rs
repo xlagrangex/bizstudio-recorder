@@ -1166,7 +1166,8 @@ impl RecordingSession {
             recording_failed,
             self.editor_recording_target.is_some(),
             crate::store::GeneralSettings::load().post_studio_recording_behaviour
-                == crate::store::PostStudioBehaviour::OpenEditor,
+                == crate::store::PostStudioBehaviour::OpenEditor
+                && !crate::auto_share::AutoShare::applies(),
         ) {
             let (publisher, finalization) = recording::StudioFinalization::channel(
                 studio_project_path.clone(),

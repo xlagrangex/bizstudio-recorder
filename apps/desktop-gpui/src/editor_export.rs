@@ -50,16 +50,19 @@ pub enum ExportDestination {
     File,
     Clipboard,
     Link,
+    /// The recording's raw tracks, unrendered (`source_export`).
+    Sources,
 }
 
 impl ExportDestination {
-    const ALL: &'static [Self] = &[Self::File, Self::Clipboard, Self::Link];
+    const ALL: &'static [Self] = &[Self::File, Self::Clipboard, Self::Link, Self::Sources];
 
     fn label(self) -> &'static str {
         match self {
             Self::File => "File",
             Self::Clipboard => "Clipboard",
-            Self::Link => "Shareable Link",
+            Self::Link => "Link",
+            Self::Sources => "Sources",
         }
     }
 
@@ -68,12 +71,15 @@ impl ExportDestination {
             Self::File => "icons/folder.svg",
             Self::Clipboard => "icons/copy.svg",
             Self::Link => "icons/link.svg",
+            Self::Sources => "icons/layers.svg",
         }
     }
 
+    /// Sources is never remembered: the next export opens on a rendered
+    /// destination, which is what most exports are.
     fn slug(self) -> &'static str {
         match self {
-            Self::File => "file",
+            Self::File | Self::Sources => "file",
             Self::Clipboard => "clipboard",
             Self::Link => "link",
         }
@@ -221,6 +227,9 @@ pub struct ExportUi {
     pub copy_link_pressed: bool,
     bpp_track: ui::SliderTrack,
     bpp_dragging: bool,
+    pub sources: Option<crate::source_export::RecordingSources>,
+    pub source_kinds: Vec<crate::source_export::SourceKind>,
+    pub sources_dir: Option<PathBuf>,
 }
 
 impl Drop for ExportUi {
@@ -308,6 +317,9 @@ impl ExportUi {
             copy_link_pressed: false,
             bpp_track: ui::SliderTrack::default(),
             bpp_dragging: false,
+            sources: None,
+            source_kinds: Vec::new(),
+            sources_dir: None,
         }
     }
 
@@ -435,6 +447,13 @@ fn format_duration(seconds: f64) -> String {
     }
 }
 
+fn abbreviate_home(path: &Path) -> String {
+    match dirs::home_dir().and_then(|home| path.strip_prefix(home).ok().map(Path::to_path_buf)) {
+        Some(rest) => format!("~/{}", rest.display()),
+        None => path.display().to_string(),
+    }
+}
+
 fn export_file_name(pretty_name: &str, extension: &str) -> String {
     let mut name = sanitize_filename::sanitize_with_options(
         pretty_name,
@@ -546,6 +565,13 @@ impl EditorWindow {
             ui.destination = ExportDestination::File;
         }
         self.normalize_export_fps(&mut ui);
+        match crate::source_export::RecordingSources::load(&self.project_path) {
+            Ok(sources) => {
+                ui.source_kinds = sources.available();
+                ui.sources = Some(sources);
+            }
+            Err(error) => tracing::warn!(%error, "recording sources unavailable"),
+        }
         self.export = Some(ui);
         self.subscribe_export_to_sign_in(window, cx);
         self.refresh_export_preview(window, cx);
@@ -786,6 +812,10 @@ impl EditorWindow {
         };
         ui.estimate_cancel.store(true, Ordering::Release);
         if ui.phase.is_busy() || ui.close_requested {
+            return;
+        }
+        if ui.destination == ExportDestination::Sources {
+            self.start_sources_export(window, cx);
             return;
         }
         if ui.destination == ExportDestination::Link {
@@ -1077,6 +1107,14 @@ impl EditorWindow {
             return;
         };
         if ui.phase.is_busy() || ui.close_requested {
+            return;
+        }
+
+        if crate::auto_share::AutoShare::is_busy(cx, &self.project_path) {
+            platform::alert_dialog(
+                "Still sharing",
+                "This recording is still being shared automatically. Reupload once it finishes.",
+            );
             return;
         }
 
@@ -1682,15 +1720,20 @@ impl EditorWindow {
                     .p(px(16.))
                     .gap(px(20.))
                     .child(self.export_destination_field(ui, link_disabled, cx))
-                    .child(self.export_format_field(ui, format_locked, cx))
-                    .child(self.export_resolution_field(ui, &resolutions, cx))
-                    .child(self.export_fps_field(ui, fps_options, cx))
-                    .when(
-                        ui.format == ExportFormatKind::Mp4 && !ui.cursor_only,
-                        |this| this.child(self.export_quality_field(ui, cx)),
-                    )
-                    .child(div().h(px(1.)).flex_none().bg(Hsla::from(editor.line)))
-                    .child(self.export_advanced(ui, cx)),
+                    .map(|this| {
+                        if ui.destination == ExportDestination::Sources {
+                            return this.child(self.export_sources_field(ui, cx));
+                        }
+                        this.child(self.export_format_field(ui, format_locked, cx))
+                            .child(self.export_resolution_field(ui, &resolutions, cx))
+                            .child(self.export_fps_field(ui, fps_options, cx))
+                            .when(
+                                ui.format == ExportFormatKind::Mp4 && !ui.cursor_only,
+                                |this| this.child(self.export_quality_field(ui, cx)),
+                            )
+                            .child(div().h(px(1.)).flex_none().bg(Hsla::from(editor.line)))
+                            .child(self.export_advanced(ui, cx))
+                    }),
             )
             .child(
                 div()
@@ -1711,6 +1754,7 @@ impl EditorWindow {
         let (label, icon, primary) = match ui.destination {
             ExportDestination::File => ("Export to File", Some("icons/folder.svg"), true),
             ExportDestination::Clipboard => ("Export to Clipboard", Some("icons/copy.svg"), true),
+            ExportDestination::Sources => ("Export Sources", Some("icons/layers.svg"), true),
             ExportDestination::Link if sign_in_pending => ("Cancel Sign In", None, false),
             ExportDestination::Link if !signed_in => {
                 ("Sign in to share", Some("icons/link.svg"), true)
@@ -1761,6 +1805,249 @@ impl EditorWindow {
         })
         .children(icon.map(|icon| svg().path(icon).size(px(16.)).text_color(text)))
         .child(label)
+    }
+
+    fn export_sources_field(&self, ui: &ExportUi, cx: &mut Context<Self>) -> impl IntoElement {
+        use crate::source_export::SourceKind;
+        let theme = self.theme;
+        let editor = theme.editor;
+        let available = ui
+            .sources
+            .as_ref()
+            .map(|sources| sources.available())
+            .unwrap_or_default();
+        let folder = ui
+            .sources_dir
+            .clone()
+            .or_else(|| {
+                ui.sources
+                    .as_ref()
+                    .map(|sources| sources.default_destination())
+            })
+            .map(|path| abbreviate_home(&path))
+            .unwrap_or_default();
+
+        let rows = available.into_iter().map(|kind| {
+            let checked = ui.source_kinds.contains(&kind);
+            div()
+                .id(("export-source", kind as usize))
+                .flex()
+                .flex_row()
+                .items_center()
+                .gap(px(10.))
+                .px(px(10.))
+                .py(px(8.))
+                .rounded(px(8.))
+                .cursor_pointer()
+                .hover(move |style| style.bg(Hsla::from(editor.ctl)))
+                .child(
+                    div()
+                        .size(px(16.))
+                        .flex_none()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .rounded(px(4.))
+                        .border_1()
+                        .border_color(Hsla::from(if checked {
+                            editor.accent
+                        } else {
+                            editor.line
+                        }))
+                        .when(checked, |this| {
+                            this.bg(Hsla::from(editor.accent)).child(
+                                svg()
+                                    .path("icons/check.svg")
+                                    .size(px(12.))
+                                    .text_color(gpui::white()),
+                            )
+                        }),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .flex_col()
+                        .min_w_0()
+                        .child(
+                            div()
+                                .text_size(px(12.5))
+                                .font_weight(FontWeight::MEDIUM)
+                                .text_color(Hsla::from(editor.text_1))
+                                .child(kind.label()),
+                        )
+                        .child(
+                            div()
+                                .text_size(px(11.))
+                                .text_color(Hsla::from(editor.text_3))
+                                .child(kind.detail()),
+                        ),
+                )
+                .on_click(cx.listener(move |this, _, _window, cx| {
+                    if let Some(ui) = this.export.as_mut() {
+                        if let Some(index) = ui.source_kinds.iter().position(|k| *k == kind) {
+                            ui.source_kinds.remove(index);
+                        } else {
+                            ui.source_kinds.push(kind);
+                            ui.source_kinds
+                                .sort_by_key(|k| SourceKind::ALL.iter().position(|all| all == k));
+                        }
+                    }
+                    cx.notify();
+                }))
+        });
+
+        let mut field = self.export_section("Sources", "icons/layers.svg");
+        if ui.sources.is_none() {
+            field = field.child(
+                div()
+                    .text_size(px(11.5))
+                    .text_color(Hsla::from(editor.text_3))
+                    .child("This recording's source files could not be read."),
+            );
+        }
+        field
+            .child(div().flex().flex_col().gap(px(2.)).children(rows))
+            .child(
+                div()
+                    .text_size(px(11.))
+                    .line_height(px(15.))
+                    .text_color(Hsla::from(editor.text_3))
+                    .child("Raw tracks, without edits. Video is copied as recorded; multi-part recordings are joined into one file per track."),
+            )
+            .child(
+                div()
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .gap(px(8.))
+                    .p(px(10.))
+                    .rounded(px(10.))
+                    .bg(Hsla::from(editor.card_2))
+                    .child(
+                        svg()
+                            .path("icons/folder.svg")
+                            .size(px(14.))
+                            .flex_none()
+                            .text_color(Hsla::from(editor.text_2)),
+                    )
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .truncate()
+                            .text_size(px(11.5))
+                            .text_color(Hsla::from(editor.text_1))
+                            .child(folder),
+                    )
+                    .child(
+                        ui::Button::plain(
+                            &theme,
+                            "export-sources-folder",
+                            ui::ButtonVariant::Gray,
+                            ui::ButtonSize::Xs,
+                        )
+                        .label("Change…")
+                        .on_click(cx.listener(|this, _, window, cx| {
+                            this.pick_sources_folder(window, cx);
+                        })),
+                    ),
+            )
+    }
+
+    /// The chosen folder is the parent; the recording still gets its own
+    /// subfolder inside it, so picking ~/Desktop never scatters files there.
+    fn pick_sources_folder(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let paths = cx.prompt_for_paths(gpui::PathPromptOptions {
+            files: false,
+            directories: true,
+            multiple: false,
+            prompt: Some("Export here".into()),
+        });
+        cx.spawn_in(window, async move |this, cx| {
+            let Ok(Ok(Some(paths))) = paths.await else {
+                return;
+            };
+            let Some(dir) = paths.into_iter().next() else {
+                return;
+            };
+            this.update(cx, |this, cx| {
+                if let Some(ui) = this.export.as_mut()
+                    && let Some(sources) = &ui.sources
+                {
+                    ui.sources_dir = Some(sources.destination_in(&dir));
+                }
+                cx.notify();
+            })
+            .ok();
+        })
+        .detach();
+    }
+
+    fn start_sources_export(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(ui) = self.export.as_mut() else {
+            return;
+        };
+        let Some(sources) = ui.sources.clone() else {
+            return;
+        };
+        if ui.source_kinds.is_empty() {
+            platform::alert_dialog("Nothing selected", "Tick at least one source to export.");
+            return;
+        }
+        let kinds = ui.source_kinds.clone();
+        let destination = ui
+            .sources_dir
+            .clone()
+            .unwrap_or_else(|| sources.default_destination());
+        ui.cancel = Arc::new(AtomicBool::new(false));
+        ui.phase = ExportPhase::Copying;
+        ui.error = None;
+        ui.rendered = 0;
+        ui.total_frames = kinds.len() as u32;
+        ui.output_path = None;
+        cx.notify();
+
+        let (progress_tx, progress_rx) = flume::unbounded::<(usize, usize)>();
+        ui.export_task = Some(cx.spawn_in(window, async move |this, cx| {
+            let job = cx.background_executor().spawn(async move {
+                sources.export(&kinds, &destination, |done, total| {
+                    let _ = progress_tx.send((done, total));
+                })
+            });
+            let progress = async {
+                while let Ok((done, total)) = progress_rx.recv_async().await {
+                    let _ = this.update(cx, |this, cx| {
+                        if let Some(ui) = this.export.as_mut() {
+                            ui.rendered = done as u32;
+                            ui.total_frames = total as u32;
+                        }
+                        cx.notify();
+                    });
+                }
+            };
+            let (result, ()) = futures_util::future::join(job, progress).await;
+            let _ = this.update_in(cx, |this, window, cx| {
+                if let Some(ui) = this.export.as_mut() {
+                    match result {
+                        Ok(folder) => {
+                            tracing::info!(path = %folder.display(), "recording sources exported");
+                            crate::app_sounds::play_notification();
+                            library::open_path(&folder);
+                            ui.phase = ExportPhase::Done;
+                            ui.output_path = Some(folder);
+                            ui.sources_dir = None;
+                        }
+                        Err(error) => {
+                            tracing::error!(error, "sources export failed");
+                            ui.phase = ExportPhase::Failed;
+                            ui.error = Some(error);
+                        }
+                    }
+                }
+                cx.notify();
+                this.finish_requested_export_close(window, cx);
+            });
+        }));
     }
 
     fn export_section(&self, name: &'static str, icon: &'static str) -> ui::Field {
@@ -2433,6 +2720,9 @@ impl EditorWindow {
             ExportPhase::Copying if ui.destination == ExportDestination::Clipboard => {
                 "Copying to clipboard"
             }
+            ExportPhase::Copying if ui.destination == ExportDestination::Sources => {
+                "Exporting sources"
+            }
             ExportPhase::Copying => "Saving to file",
             ExportPhase::Uploading if ui.reuploading => "Reuploading to your link",
             ExportPhase::Uploading => "Creating shareable link",
@@ -2443,6 +2733,7 @@ impl EditorWindow {
                 "Reupload complete"
             }
             ExportPhase::Done if ui.destination == ExportDestination::Link => "Upload complete",
+            ExportPhase::Done if ui.destination == ExportDestination::Sources => "Sources exported",
             ExportPhase::Done => "Export complete",
             ExportPhase::Failed if ui.clipboard_retry_path().is_some() => {
                 "Export complete; clipboard copy failed"
@@ -2618,6 +2909,27 @@ impl EditorWindow {
                                 ui::ButtonSize::Md,
                             )
                             .label("Open File")
+                            .on_click(move |_, _, _| {
+                                if let Some(path) = &path {
+                                    library::open_path(path);
+                                }
+                            }),
+                        )
+                    },
+                )
+                .when(
+                    ui.phase == ExportPhase::Done && ui.destination == ExportDestination::Sources,
+                    |this| {
+                        let path = ui.output_path.clone();
+                        this.child(
+                            ui::Button::plain(
+                                &theme,
+                                "export-show-sources",
+                                ui::ButtonVariant::Gray,
+                                ui::ButtonSize::Md,
+                            )
+                            .icon("icons/folder-open.svg")
+                            .label("Show in Finder")
                             .on_click(move |_, _, _| {
                                 if let Some(path) = &path {
                                     library::open_path(path);
@@ -2868,6 +3180,70 @@ fn matches_compression(current: ExportCompression, expected: ExportCompression) 
 }
 
 #[allow(clippy::too_many_arguments)]
+/// The editor's link export with no editor around it, for `crate::auto_share`:
+/// the saved export preferences rendered as MP4 (a share needs a video, so a
+/// saved GIF or cursor-only choice is ignored) from the project's own config
+/// into the meta's output path, which is where `upload_exported_video` reads.
+/// A resource warning the editor would ask about only gets logged: nobody is
+/// there to answer, and running out of disk still stops the render.
+pub(crate) async fn render_for_share(
+    project_path: PathBuf,
+    progress_tx: flume::Sender<(u32, u32)>,
+    cancel: Arc<AtomicBool>,
+) -> Result<PathBuf, String> {
+    let meta = RecordingMeta::load_for_project(&project_path)
+        .map_err(|error| format!("Failed to load recording metadata: {error}"))?;
+    let save_path = meta.output_path();
+    if let Some(parent) = save_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|error| format!("Failed to create the export folder: {error}"))?;
+    }
+    let (fps, (width, height), compression, custom_bpp, optimize, force) = {
+        let prefs = ExportUi::load();
+        (
+            prefs.fps,
+            prefs.resolution.size(),
+            prefs.compression,
+            prefs.custom_bpp,
+            prefs.optimize_filesize,
+            prefs.force_ffmpeg,
+        )
+    };
+    let resources = ExportResources::new(vec![DiskBudget {
+        path: save_path.clone(),
+        description: "your recording drive",
+        estimated_bytes: 0,
+    }]);
+    if let Some(warning) = resources.check().await? {
+        tracing::warn!(
+            warning,
+            "auto-share export continuing past a resource warning"
+        );
+    }
+    let stopped = cancel.clone();
+    resources
+        .supervise(
+            run_export(
+                project_path,
+                meta.project_config(),
+                ExportFormatKind::Mp4,
+                false,
+                fps,
+                width,
+                height,
+                compression,
+                custom_bpp,
+                optimize,
+                force,
+                Some(save_path),
+                progress_tx,
+                cancel,
+            ),
+            || stopped.store(true, Ordering::Release),
+        )
+        .await
+}
+
 async fn run_export(
     project_path: PathBuf,
     project: cap_project::ProjectConfiguration,

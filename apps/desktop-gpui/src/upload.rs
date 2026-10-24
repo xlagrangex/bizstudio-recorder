@@ -1368,6 +1368,69 @@ async fn upload_exported_video_inner(
     }
 }
 
+/// Claims the share link for a not-yet-rendered recording, so it can be handed
+/// out while the export runs. The server record carries an upload-in-progress
+/// row until the file lands, and `upload_exported_video` picks the reserved id
+/// back up from `meta.upload`, so the link it finally returns is this one.
+pub async fn reserve_share_link(
+    project_path: PathBuf,
+    organization_id: Option<String>,
+) -> Result<UploadResult, String> {
+    if store_auth_missing() {
+        return Ok(UploadResult::NotAuthenticated);
+    }
+    let mut meta = RecordingMeta::load_for_project(&project_path)
+        .map_err(|error| format!("Failed to load recording metadata: {error}"))?;
+    if let Some(sharing) = &meta.sharing {
+        return Ok(UploadResult::Success(sharing.link.clone()));
+    }
+
+    let reserved = match reusable_video_id(None, meta.upload.as_ref()) {
+        Some(video_id) => Ok(video_id),
+        None => request_video_id().await,
+    };
+    let created = match reserved {
+        Ok(video_id) => create_or_get_video(
+            false,
+            Some(video_id.clone()),
+            Some(meta.pretty_name.clone()),
+            None,
+            organization_id,
+        )
+        .await
+        .and_then(|config| {
+            if config.id == video_id {
+                Ok(video_id)
+            } else {
+                Err(AuthApiError::Other(
+                    "Server did not preserve the reserved upload identity".into(),
+                ))
+            }
+        }),
+        Err(error) => Err(error),
+    };
+    let video_id = match created {
+        Ok(video_id) => video_id,
+        Err(AuthApiError::InvalidAuthentication) => return Ok(UploadResult::NotAuthenticated),
+        Err(AuthApiError::UpgradeRequired) => return Ok(UploadResult::UpgradeRequired),
+        Err(error) => return Err(error.to_string()),
+    };
+
+    meta.upload = Some(UploadMeta::SinglePartUpload {
+        video_id: video_id.clone(),
+        file_path: meta.output_path(),
+        screenshot_path: project_path.join("screenshots/display.jpg"),
+        recording_dir: project_path.clone(),
+    });
+    meta.save_for_project()
+        .map_err(|error| format!("Failed to persist upload identity: {error}"))?;
+    Ok(UploadResult::Success(share_url(&video_id)))
+}
+
+fn share_url(video_id: &str) -> String {
+    format!("{}/s/{video_id}", auth::server_url())
+}
+
 fn reusable_video_id(sharing: Option<&SharingMeta>, upload: Option<&UploadMeta>) -> Option<String> {
     sharing
         .map(|sharing| sharing.id.clone())
@@ -1720,7 +1783,7 @@ async fn upload_video(
                 completed_identity
             };
             Ok(ReplacementUploadAttempt::Completed((
-                format!("{}/s/{video_id}", auth::server_url()),
+                share_url(video_id),
                 object_identity,
             )))
         },

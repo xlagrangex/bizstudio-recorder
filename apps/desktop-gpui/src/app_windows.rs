@@ -626,15 +626,26 @@ pub fn init(main: WindowHandle<MainWindow>, session: Entity<RecordingSession>, c
                 // until an overlay exists) reshows the main window as before.
                 let behaviour =
                     crate::store::GeneralSettings::load().post_studio_recording_behaviour;
-                match (finished_studio, behaviour) {
-                    (Some(project_dir), crate::store::PostStudioBehaviour::OpenEditor) => {
-                        open_editor(project_dir, cx)
+                // Studio + auto-share (`crate::auto_share`): no editor, the
+                // main window comes back carrying the share's progress.
+                if let Some(project_dir) = finished_studio
+                    .as_ref()
+                    .filter(|_| crate::auto_share::AutoShare::applies())
+                {
+                    let auto_share = crate::auto_share::AutoShare::global(cx);
+                    auto_share.update(cx, |share, cx| share.start(project_dir.clone(), cx));
+                    show_main_window(cx);
+                } else {
+                    match (finished_studio, behaviour) {
+                        (Some(project_dir), crate::store::PostStudioBehaviour::OpenEditor) => {
+                            open_editor(project_dir, cx)
+                        }
+                        (Some(_), crate::store::PostStudioBehaviour::DoNothing) => {
+                            park_idle_camera_preview(cx);
+                            crate::menus::schedule_dock_sync(cx);
+                        }
+                        _ => show_main_window(cx),
                     }
-                    (Some(_), crate::store::PostStudioBehaviour::DoNothing) => {
-                        park_idle_camera_preview(cx);
-                        crate::menus::schedule_dock_sync(cx);
-                    }
-                    _ => show_main_window(cx),
                 }
             }
             // `NewStudioRecordingAdded` -> `add_new_item_to_cache` +

@@ -1276,6 +1276,31 @@ impl SettingsWindow {
         .detach();
     }
 
+    /// A Studio row a quit or crash left unfinished: stitch what was
+    /// written, then open it like any finished recording.
+    fn recover_recording(&mut self, path: PathBuf, window: &mut Window, cx: &mut Context<Self>) {
+        cx.spawn_in(window, async move |this, cx| {
+            let result = cx
+                .background_executor()
+                .spawn(async move { library::recover_incomplete_recording(&path) })
+                .await;
+            this.update_in(cx, |this, window, cx| {
+                this.refresh_recordings(window, cx);
+                match result {
+                    Ok(project_path) => {
+                        cx.defer(move |cx| crate::app_windows::open_editor(project_path, cx));
+                    }
+                    Err(error) => {
+                        tracing::warn!(%error, "recovering a recording from settings failed");
+                        crate::platform::alert_dialog("Could not recover the recording", &error);
+                    }
+                }
+            })
+            .ok();
+        })
+        .detach();
+    }
+
     fn sync_appearance(&mut self, window: &Window, cx: &gpui::App) {
         self.theme.refresh(window, cx, true);
     }
@@ -2844,17 +2869,33 @@ impl SettingsWindow {
                 ));
             }
             let editor_path = path.clone();
-            actions = actions.child(self.row_button(
-                ("recording-edit", index),
-                "icons/edit.svg",
-                "Edit",
-                // `disabled={status === "InProgress"}`
-                in_progress,
-                cx,
-                move |this, window, cx| {
-                    this.open_editor_confirmed(editor_path.clone(), failed, window, cx)
-                },
-            ));
+            let recoverable = item.needs_recovery()
+                && crate::session::RecordingSession::global(cx).read(cx).phase
+                    == crate::session::Phase::Idle;
+            actions = actions.child(if recoverable {
+                self.row_button(
+                    ("recording-recover", index),
+                    "icons/rotate-ccw.svg",
+                    "Recover and open in Studio",
+                    false,
+                    cx,
+                    move |this, window, cx| this.recover_recording(editor_path.clone(), window, cx),
+                )
+                .into_any_element()
+            } else {
+                self.row_button(
+                    ("recording-edit", index),
+                    "icons/edit.svg",
+                    "Open in Studio",
+                    // `disabled={status === "InProgress"}`
+                    in_progress,
+                    cx,
+                    move |this, window, cx| {
+                        this.open_editor_confirmed(editor_path.clone(), failed, window, cx)
+                    },
+                )
+                .into_any_element()
+            });
         }
 
         if mode == RecordingMode::Instant {

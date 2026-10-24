@@ -7,6 +7,7 @@ mod app_sounds;
 mod app_windows;
 mod assets;
 mod auth;
+mod auto_share;
 #[cfg(target_os = "macos")]
 mod camera_bench;
 #[cfg(target_os = "macos")]
@@ -72,6 +73,7 @@ mod session;
 mod settings_pages;
 mod settings_window;
 mod sign_in;
+mod source_export;
 mod single_instance;
 #[cfg(debug_assertions)]
 mod snapshot;
@@ -335,6 +337,7 @@ fn main() {
         platform::follow_system_reduce_motion(cx);
 
         let session = RecordingSession::init(cx);
+        auto_share::AutoShare::init(cx);
         crate::sign_in::SignIn::init(cx);
         crate::feeds::Feeds::init(cx);
         crate::media_access::MediaAccess::init(cx);

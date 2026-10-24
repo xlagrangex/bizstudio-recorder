@@ -1505,6 +1505,40 @@ fn studio_share_cancel_then_resume_reuses_the_persisted_video() {
     });
 }
 
+/// Studio + auto-share: the link handed out before the render is the one the
+/// upload lands on, and a later editor "Reupload" replaces the file behind
+/// that same link instead of minting a new one.
+#[test]
+fn reserved_share_link_survives_the_upload_and_a_reupload() {
+    ffmpeg::init().unwrap();
+    let scratch = Scratch::new("reserved_share_link");
+    virtual_time(async {
+        let mock = MockCap::start(Vec::new()).await;
+        scratch.sign_in(&mock.url);
+        let project = studio_project(&scratch.0);
+
+        let reserved = match reserve_share_link(project.clone(), None).await {
+            Ok(UploadResult::Success(link)) => link,
+            other => panic!("unexpected reservation {other:?}"),
+        };
+        let video_id = match RecordingMeta::load_for_project(&project).unwrap().upload {
+            Some(UploadMeta::SinglePartUpload { video_id, .. }) => video_id,
+            other => panic!("unexpected upload state {other:?}"),
+        };
+        assert_eq!(reserved, format!("{}/s/{video_id}", mock.url));
+
+        let first = share(&project, Arc::new(AtomicBool::new(false))).await;
+        assert_shared(&mock, &project, &first);
+        assert_eq!(first.result, Ok(UploadResult::Success(reserved.clone())));
+
+        let again = share(&project, Arc::new(AtomicBool::new(false))).await;
+        assert_eq!(again.result, Ok(UploadResult::Success(reserved)));
+        let meta = RecordingMeta::load_for_project(&project).unwrap();
+        assert_eq!(meta.sharing.unwrap().id, video_id);
+        assert_eq!(mock.count("GET", "video/new-id"), 1);
+    });
+}
+
 /// Feeds the recorder's segment events on a fixed virtual schedule: both init
 /// segments at 0 s, then audio segment k at 2k s and video segment k at
 /// 2k + 0.6 s, so no two segments are in flight at the same moment unless a

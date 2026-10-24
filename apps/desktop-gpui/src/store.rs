@@ -1345,6 +1345,18 @@ pub fn set_recording_mode_slug(slug: &str) -> bool {
     set_store_setting(RECORDING_SETTINGS, "mode", Value::String(slug.to_string()))
 }
 
+const AUTO_SHARE_STUDIO: &str = "bizstudioAutoShareStudio";
+
+/// Whether a cleanly stopped Studio recording is rendered and uploaded to a
+/// share link on its own (`crate::auto_share`).
+pub fn auto_share_studio() -> bool {
+    bool_at(&store_section(GENERAL_SETTINGS), AUTO_SHARE_STUDIO, false)
+}
+
+pub fn set_auto_share_studio(enabled: bool) -> bool {
+    set_store_setting(GENERAL_SETTINGS, AUTO_SHARE_STUDIO, Value::Bool(enabled))
+}
+
 pub fn has_completed_startup() -> bool {
     store_section(GENERAL_SETTINGS)
         .get("hasCompletedStartup")
@@ -2277,6 +2289,16 @@ mod tests {
         std::fs::remove_file(&store.path).unwrap();
         assert!(!has_completed_startup());
         assert!(store_section(GENERAL_SETTINGS).is_empty());
+    }
+
+    #[test]
+    fn auto_share_is_opt_in() {
+        let store = TempStore::new("auto-share-opt-in", Some("{}"));
+        backdate(&store.path, seconds_ago(60));
+        assert!(!auto_share_studio());
+        assert!(set_auto_share_studio(true));
+        backdate(&store.path, seconds_ago(60));
+        assert!(auto_share_studio());
     }
 
     #[test]

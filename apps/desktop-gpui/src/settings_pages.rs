@@ -1501,6 +1501,28 @@ impl SettingsWindow {
 
         let mut recording = rows_for(&RECORDING_SHORTCUTS, cx);
         recording.push(
+            self.setting_row(
+                "Share Studio recordings automatically",
+                Some(
+                    "When you stop, render and upload to a share link right away and copy it. \
+                     The recording stays editable: reupload from the editor to update the same \
+                     link.",
+                ),
+                self.toggle(
+                    "auto-share-studio",
+                    "Share Studio recordings automatically",
+                    store::auto_share_studio(),
+                    cx,
+                    |_, cx| {
+                        store::set_auto_share_studio(!store::auto_share_studio());
+                        cx.notify();
+                    },
+                )
+                .into_any_element(),
+            )
+            .into_any_element(),
+        );
+        recording.push(
             self.render_outcome_panel(
                 "outcome-studio",
                 "After a Studio recording",

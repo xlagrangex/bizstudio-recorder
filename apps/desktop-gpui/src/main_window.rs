@@ -830,6 +830,7 @@ pub struct MainWindow {
     library: Option<LibraryItems>,
     library_task: Option<gpui::Task<()>>,
     incomplete_recording: Option<library::IncompleteRecordingItem>,
+    sources_exporting: std::collections::HashSet<std::path::PathBuf>,
     recovery_error: Option<String>,
     recovery_pending: bool,
     recovery_scan_task: Option<Task<()>>,
@@ -903,6 +904,10 @@ impl MainWindow {
                 this.schedule_target_prewarm(window, cx);
             }
             cx.notify();
+        })
+        .detach();
+        cx.observe(&crate::auto_share::AutoShare::global(cx), |_, _, cx| {
+            cx.notify()
         })
         .detach();
         let theme = Theme::for_window(window, cx, true);
@@ -1115,6 +1120,7 @@ impl MainWindow {
             library: None,
             library_task: None,
             incomplete_recording: None,
+            sources_exporting: Default::default(),
             recovery_error: None,
             recovery_pending: false,
             recovery_scan_task: None,
@@ -2808,6 +2814,7 @@ impl Render for MainWindow {
                     .filter(|_| self.session.read(cx).phase == Phase::Idle),
                 |this, recording| this.child(self.render_recovery_toast(recording, cx)),
             )
+            .children(self.render_auto_share_toast(cx))
             .when(app_windows::clean_capture_pending(cx), |this| {
                 this.child(self.render_clean_capture_preflight(cx))
             })
@@ -3354,6 +3361,141 @@ impl MainWindow {
                             ),
                     ),
             )
+    }
+
+    /// Studio + auto-share's progress, link and retry (`crate::auto_share`).
+    fn render_auto_share_toast(&self, cx: &mut Context<Self>) -> Option<gpui::AnyElement> {
+        use crate::auto_share::{AutoShare, ShareStage};
+
+        if self.session.read(cx).phase != Phase::Idle {
+            return None;
+        }
+        let (name, label, failed, done, project, link, progress) = {
+            let share = AutoShare::global(cx);
+            let share = share.read(cx);
+            let job = share.latest()?;
+            (
+                job.name.clone(),
+                job.status_label(),
+                matches!(job.stage, ShareStage::Failed(_)),
+                job.stage == ShareStage::Done,
+                job.project_path.clone(),
+                job.link.clone(),
+                job.progress(),
+            )
+        };
+        let theme = self.theme;
+
+        let actions = div()
+            .flex()
+            .flex_row()
+            .flex_shrink_0()
+            .gap(px(6.))
+            .when_some(link.filter(|_| !failed), |this, link| {
+                this.child(
+                    ui::Button::plain(
+                        &theme,
+                        "auto-share-copy",
+                        ui::ButtonVariant::Gray,
+                        ui::ButtonSize::Xs,
+                    )
+                    .label("Copy link")
+                    .on_click(move |_, _, cx| {
+                        cx.write_to_clipboard(gpui::ClipboardItem::new_string(link.clone()));
+                    }),
+                )
+            })
+            .when(failed, |this| {
+                let project = project.clone();
+                this.child(
+                    ui::Button::plain(
+                        &theme,
+                        "auto-share-retry",
+                        ui::ButtonVariant::Blue,
+                        ui::ButtonSize::Xs,
+                    )
+                    .label("Retry")
+                    .on_click(move |_, _, cx| {
+                        AutoShare::global(cx)
+                            .update(cx, |share, cx| share.retry(project.clone(), cx));
+                    }),
+                )
+            })
+            .when(failed || done, |this| {
+                this.child(
+                    ui::Button::plain(
+                        &theme,
+                        "auto-share-dismiss",
+                        ui::ButtonVariant::Gray,
+                        ui::ButtonSize::Xs,
+                    )
+                    .label("Dismiss")
+                    .on_click(move |_, _, cx| {
+                        AutoShare::global(cx).update(cx, |share, cx| share.dismiss(&project, cx));
+                    }),
+                )
+            });
+
+        let toast = div()
+            .absolute()
+            .top(px(HEADER_HEIGHT + 8.))
+            .left(px(12.))
+            .right(px(12.))
+            .rounded(px(8.))
+            .border_1()
+            .border_color(if failed { theme.red_4 } else { theme.gray_4 })
+            .bg(if failed { theme.red_2 } else { theme.gray_1 })
+            .p(px(10.))
+            .shadow_md()
+            .flex()
+            .flex_col()
+            .gap(px(8.))
+            .child(
+                div()
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .gap(px(8.))
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .flex()
+                            .flex_col()
+                            .child(
+                                div()
+                                    .truncate()
+                                    .text_size(px(12.))
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .text_color(theme.gray_12)
+                                    .child(name),
+                            )
+                            .child(
+                                div()
+                                    .text_size(px(10.))
+                                    .text_color(if failed { theme.red_11 } else { theme.gray_11 })
+                                    .child(label),
+                            ),
+                    )
+                    .child(actions),
+            )
+            .when_some(progress.filter(|_| !done), |this, progress| {
+                this.child(
+                    div()
+                        .h(px(4.))
+                        .w_full()
+                        .rounded_full()
+                        .bg(theme.gray_4)
+                        .child(
+                            div()
+                                .h_full()
+                                .w(gpui::relative(progress.clamp(0., 1.)))
+                                .rounded_full()
+                                .bg(theme.blue_9),
+                        ),
+                )
+            });
+        Some(toast.into_any_element())
     }
 
     fn render_header(&self, _window: &Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -4615,6 +4757,8 @@ impl MainWindow {
         let sharing = item.sharing.clone();
         let mode = item.mode;
         let opens_editor = item.opens_editor();
+        let recoverable = item.needs_recovery() && self.session.read(cx).phase == Phase::Idle;
+        let pretty_name = item.pretty_name.clone();
         let subtitle = item.upload.as_ref().map_or_else(
             || item.mode.label().to_string(),
             |upload| {
@@ -4633,10 +4777,12 @@ impl MainWindow {
             item.pretty_name.clone(),
             Some(subtitle),
             item.clip_count,
-            cx.listener(move |_, _, _window, cx| {
+            cx.listener(move |this, _, window, cx| {
                 if studio && opens_editor {
                     let path = path.clone();
                     cx.defer(move |cx| app_windows::open_editor(path, cx));
+                } else if recoverable {
+                    this.recover_library_recording(path.clone(), pretty_name.clone(), window, cx);
                 } else if !studio && let Some(url) = &sharing {
                     cx.open_url(url);
                 } else if !studio {
@@ -4654,28 +4800,58 @@ impl MainWindow {
         item: &RecordingItem,
         cx: &mut Context<Self>,
     ) -> gpui::Div {
+        let theme = self.theme;
         let path = item.path.clone();
         let mode = item.mode;
         let sharing = item.sharing.clone();
+        let studio_button = if item.opens_editor() {
+            let editor = path.clone();
+            Some(
+                ui::Button::plain(
+                    &theme,
+                    ("lib-rec-open-studio", index),
+                    ui::ButtonVariant::Blue,
+                    ui::ButtonSize::Xs,
+                )
+                .icon("icons/edit.svg")
+                .label("Open in Studio")
+                .full_width()
+                .on_click(move |_, _, cx| {
+                    let editor = editor.clone();
+                    cx.defer(move |cx| app_windows::open_editor(editor, cx));
+                }),
+            )
+        } else if item.needs_recovery() && self.session.read(cx).phase == Phase::Idle {
+            let recover = path.clone();
+            let name = item.pretty_name.clone();
+            Some(
+                ui::Button::plain(
+                    &theme,
+                    ("lib-rec-recover", index),
+                    ui::ButtonVariant::Gray,
+                    ui::ButtonSize::Xs,
+                )
+                .icon("icons/rotate-ccw.svg")
+                .label(if self.recovery_pending {
+                    "Recovering…"
+                } else {
+                    "Recover and open"
+                })
+                .disabled(self.recovery_pending)
+                .full_width()
+                .on_click(cx.listener(move |this, _, window, cx| {
+                    this.recover_library_recording(recover.clone(), name.clone(), window, cx);
+                })),
+            )
+        } else {
+            None
+        };
         let mut row = div()
             .flex()
             .flex_row()
             .items_center()
             .justify_between()
-            .px(px(8.))
-            .pb(px(6.))
             .gap(px(4.));
-        if item.opens_editor() {
-            let editor = path.clone();
-            row = row.child(self.library_action(
-                ("lib-rec-edit", index),
-                "icons/edit.svg",
-                cx.listener(move |_, _, _window, cx| {
-                    let editor = editor.clone();
-                    cx.defer(move |cx| app_windows::open_editor(editor, cx));
-                }),
-            ));
-        }
         if let Some(url) = sharing {
             row = row.child(self.library_action(
                 ("lib-rec-link", index),
@@ -4713,19 +4889,103 @@ impl MainWindow {
                 }),
             ));
         }
+        if item.opens_editor() {
+            let sources = path.clone();
+            let exporting = self.sources_exporting.contains(&path);
+            row = row.child(self.library_action(
+                ("lib-rec-sources", index),
+                if exporting {
+                    "icons/refresh-cw.svg"
+                } else {
+                    "icons/layers.svg"
+                },
+                cx.listener(move |this, _, window, cx| {
+                    this.export_library_sources(sources.clone(), window, cx);
+                }),
+            ));
+        }
         let folder = path.clone();
         row = row.child(self.library_action(
             ("lib-rec-folder", index),
             "icons/folder.svg",
             move |_, _, _| library::open_recording_folder(&folder, mode),
         ));
-        row.child(self.library_action(
+        let row = row.child(self.library_action(
             ("lib-rec-delete", index),
             "icons/trash.svg",
             cx.listener(move |this, _, window, cx| {
                 this.delete_library_recording(path.clone(), window, cx);
             }),
-        ))
+        ));
+        div()
+            .flex()
+            .flex_col()
+            .gap(px(4.))
+            .px(px(8.))
+            .pb(px(6.))
+            .children(studio_button)
+            .child(row)
+    }
+
+    /// Every track the recording has, into `~/Movies/Bizstudio/<name>/`,
+    /// then the folder opens -- the editor's Sources destination with its
+    /// defaults.
+    fn export_library_sources(
+        &mut self,
+        project_path: std::path::PathBuf,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if !self.sources_exporting.insert(project_path.clone()) {
+            return;
+        }
+        cx.notify();
+        cx.spawn_in(window, async move |this, cx| {
+            let job_path = project_path.clone();
+            let result = cx
+                .background_executor()
+                .spawn(async move {
+                    let sources = crate::source_export::RecordingSources::load(&job_path)?;
+                    let destination = sources.default_destination();
+                    sources.export(&sources.available(), &destination, |_, _| {})
+                })
+                .await;
+            this.update(cx, |this, cx| {
+                this.sources_exporting.remove(&project_path);
+                match result {
+                    Ok(folder) => library::open_path(&folder),
+                    Err(error) => {
+                        tracing::error!(error, "library sources export failed");
+                        crate::platform::alert_dialog("Could not export the sources", &error);
+                    }
+                }
+                cx.notify();
+            })
+            .ok();
+        })
+        .detach();
+    }
+
+    /// The library's way back into a Studio recording a quit or crash left
+    /// unfinished: the same recovery the launch prompt runs, which opens the
+    /// editor once the segments are stitched.
+    fn recover_library_recording(
+        &mut self,
+        project_path: std::path::PathBuf,
+        pretty_name: String,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.recovery_pending {
+            return;
+        }
+        self.incomplete_recording = Some(library::IncompleteRecordingItem {
+            project_path,
+            pretty_name,
+            segment_count: 0,
+            estimated_duration_secs: 0.0,
+        });
+        self.process_incomplete_recording(true, window, cx);
     }
 
     fn render_screenshot_card(

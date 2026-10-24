@@ -143,6 +143,20 @@ pub enum DeepLinkAction {
     OpenSettings {
         page: Option<String>,
     },
+    /// `bizrec://open?videoId=<id>` from the web dashboard's "Open in Studio".
+    OpenVideo {
+        video_id: String,
+    },
+}
+
+/// Share ids are short alphanumerics; anything else is not one of ours and is
+/// never matched against the library.
+fn is_video_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 64
+        && id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
 }
 
 /// `ActionParseFromUrlError` (`deeplink_actions.rs:148-153`).
@@ -166,6 +180,19 @@ impl TryFrom<&Url> for DeepLinkAction {
                 .to_file_path()
                 .map(|project_path| Self::OpenEditor { project_path })
                 .map_err(|_| ActionParseFromUrlError::Invalid);
+        }
+
+        if url.scheme() == "bizrec" {
+            return match url.host_str() {
+                Some("open") => url
+                    .query_pairs()
+                    .find(|(key, _)| key == "videoId")
+                    .map(|(_, value)| value.into_owned())
+                    .filter(|id| is_video_id(id))
+                    .map(|video_id| Self::OpenVideo { video_id })
+                    .ok_or(ActionParseFromUrlError::Invalid),
+                _ => Err(ActionParseFromUrlError::NotAction),
+            };
         }
 
         match url.domain() {
@@ -284,7 +311,10 @@ fn submit_action_url(raw: &str) {
 /// window registry the actions dispatch into exists.
 pub fn init(cx: &mut App) {
     for argument in std::env::args().skip(1) {
-        if argument.starts_with("cap-desktop://") || argument.starts_with("cap://") {
+        if argument.starts_with("cap-desktop://")
+            || argument.starts_with("cap://")
+            || argument.starts_with("bizrec://")
+        {
             submit_action_url(&argument);
         }
     }
@@ -577,6 +607,41 @@ impl DeepLinkAction {
                 app_windows::open_settings(page, cx);
                 Ok(())
             }
+            DeepLinkAction::OpenVideo { video_id } => {
+                cx.activate(true);
+                cx.spawn(async move |cx| {
+                    let found = cx
+                        .background_executor()
+                        .spawn(async move { library::find_recording_by_video_id(&video_id) })
+                        .await;
+                    cx.update(|cx| open_found_video(found, cx));
+                })
+                .detach();
+                Ok(())
+            }
+        }
+    }
+}
+
+fn open_found_video(found: library::VideoLookup, cx: &mut App) {
+    match found {
+        library::VideoLookup::Studio(path) => {
+            tracing::info!(path = %path.display(), "opening a dashboard video in the editor");
+            cx.defer(move |cx| app_windows::open_editor(path, cx));
+        }
+        library::VideoLookup::Instant(path) => {
+            tracing::info!(path = %path.display(), "dashboard video is an Instant recording");
+            crate::platform::alert_dialog(
+                "This video can't be edited",
+                "It was recorded in Instant mode, which uploads as it records and keeps no editable project. Record in Studio mode to edit before sharing.",
+            );
+        }
+        library::VideoLookup::Missing => {
+            tracing::info!("dashboard video has no local recording");
+            crate::platform::alert_dialog(
+                "Sources not on this Mac",
+                "The original recording for this video isn't on this Mac, so it can't be opened in Studio here. Open it on the Mac that recorded it.",
+            );
         }
     }
 }
@@ -644,6 +709,29 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn bizrec_open_links_carry_only_well_formed_video_ids() {
+        let parse = |raw: &str| DeepLinkAction::try_from(&Url::parse(raw).unwrap());
+        assert_eq!(
+            parse("bizrec://open?videoId=60ab6tqvkrvmtpc"),
+            Ok(DeepLinkAction::OpenVideo {
+                video_id: "60ab6tqvkrvmtpc".into()
+            })
+        );
+        assert_eq!(
+            parse("bizrec://open?videoId=..%2F..%2Fetc"),
+            Err(ActionParseFromUrlError::Invalid)
+        );
+        assert_eq!(
+            parse("bizrec://open"),
+            Err(ActionParseFromUrlError::Invalid)
+        );
+        assert_eq!(
+            parse("bizrec://auth?token=x"),
+            Err(ActionParseFromUrlError::NotAction)
+        );
     }
 
     #[test]
