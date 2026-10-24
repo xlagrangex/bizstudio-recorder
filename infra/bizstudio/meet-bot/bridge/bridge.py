@@ -19,6 +19,7 @@ from zoneinfo import ZoneInfo
 import requests
 
 import cap
+import gcal
 import meetcal
 
 STATE_DIR = Path(os.environ.get("STATE_DIR", "/state"))
@@ -39,9 +40,7 @@ PUBLIC_DEFAULT = os.environ.get("MEETBOT_PUBLIC_DEFAULT", "false") == "true"
 LOCAL_TZ = ZoneInfo(os.environ.get("TZ_NAMES", "Europe/Rome"))
 CALENDAR_SYNC_SECONDS = int(os.environ.get("CALENDAR_SYNC_SECONDS", "300"))
 CALENDAR_TICK_SECONDS = int(os.environ.get("CALENDAR_TICK_SECONDS", "20"))
-CALENDAR_ALLOW_HTTP = os.environ.get("CALENDAR_ALLOW_HTTP", "false") == "true"
-ICAL_FILE = STATE_DIR / "ical_url"
-ICS_MAX_BYTES = 20 * 1024 * 1024
+DASHBOARD_URL = os.environ.get("DASHBOARD_URL", f"{PUBLIC_URL}/dashboard/meet-bot")
 
 MEETING_URL = re.compile(r"^https://(meet\.google\.com/[a-z]{3,4}-[a-z]{4}-[a-z]{3,4}|teams\.(microsoft|live)\.com/\S+)$")
 ATTENDEE_DONE = {"ended", "fatal_error", "data_deleted"}
@@ -298,6 +297,18 @@ def poll_loop() -> None:
 
 
 sync_lock = threading.Lock()
+google = gcal.Google(STATE_DIR / "google.json", f"{PUBLIC_URL}{BASE_PATH}/google/callback")
+
+GOOGLE_CALENDAR_ICON = """<svg aria-hidden="true" width="22" height="22" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<path fill="#fff" d="M152.632 47.368H47.368v105.263h105.263z"/>
+<path fill="#EA4335" d="M152.632 200L200 152.632h-47.368z"/>
+<path fill="#FBBC04" d="M200 47.368h-47.368v105.263H200z"/>
+<path fill="#34A853" d="M152.632 152.632H47.368V200h105.263z"/>
+<path fill="#188038" d="M0 152.632v31.579C0 192.935 7.065 200 15.789 200h31.579v-47.368z"/>
+<path fill="#1967D2" d="M200 47.368V15.789C200 7.065 192.935 0 184.211 0h-31.579v47.368z"/>
+<path fill="#4285F4" d="M152.632 0H15.789C7.065 0 0 7.065 0 15.789v136.842h47.368V47.368h105.263z"/>
+<path fill="#4285F4" d="M68.961 129.026c-3.934-2.658-6.658-6.539-8.145-11.671l9.132-3.763c.829 3.158 2.276 5.605 4.342 7.342 2.053 1.737 4.553 2.592 7.474 2.592 2.987 0 5.553-.908 7.697-2.724s3.224-4.132 3.224-6.934c0-2.868-1.132-5.211-3.395-7.026s-5.105-2.724-8.5-2.724h-5.276v-9.039H80c2.921 0 5.382-.789 7.382-2.368 2-1.579 3-3.737 3-6.487 0-2.447-.895-4.395-2.684-5.855s-4.053-2.197-6.803-2.197c-2.684 0-4.816.711-6.395 2.145s-2.724 3.197-3.447 5.276l-9.039-3.763c1.197-3.395 3.395-6.395 6.618-8.987 3.224-2.592 7.342-3.895 12.342-3.895 3.697 0 7.026.711 9.974 2.145 2.947 1.434 5.263 3.421 6.934 5.947 1.671 2.539 2.5 5.382 2.5 8.539 0 3.224-.776 5.947-2.329 8.184-1.553 2.237-3.461 3.947-5.724 5.145v.539a17.379 17.379 0 0 1 7.342 5.724c1.908 2.566 2.868 5.632 2.868 9.211s-.908 6.776-2.724 9.579c-1.816 2.803-4.329 5.013-7.513 6.618-3.197 1.605-6.789 2.421-10.776 2.421-4.618.013-8.881-1.316-12.815-3.974zm56.093-45.315l-10.026 7.25-5.013-7.605 17.987-12.974h6.895v61.197h-9.842z"/>
+</svg>"""
 
 
 def setting(key: str, default: str = "") -> str:
@@ -312,69 +323,42 @@ def set_setting(key: str, value: str) -> None:
         conn.commit()
 
 
+def flash(message: str, ok: bool) -> None:
+    set_setting("flash", json.dumps({"message": message, "ok": ok}))
+
+
+def take_flash() -> tuple[str, bool]:
+    with db_lock:
+        row = conn.execute("SELECT value FROM settings WHERE key = 'flash'").fetchone()
+        conn.execute("DELETE FROM settings WHERE key = 'flash'")
+        conn.commit()
+    data = json.loads(row["value"]) if row else {"message": "", "ok": True}
+    return data["message"], data["ok"]
+
+
 def autojoin() -> bool:
     return setting("autojoin", "1") == "1"
 
 
-def ical_url() -> str:
-    try:
-        return ICAL_FILE.read_text().strip()
-    except FileNotFoundError:
-        return ""
-
-
-def save_ical_url(value: str) -> None:
-    value = value.strip()
-    if value.startswith("webcal://"):
-        value = "https://" + value[len("webcal://"):]
-    parts = urlsplit(value)
-    schemes = ("https", "http") if CALENDAR_ALLOW_HTTP else ("https",)
-    if parts.scheme not in schemes or not parts.netloc or len(value) > 2000:
-        raise ValueError("Indirizzo non valido: incolla l'indirizzo segreto in formato iCal (https://calendar.google.com/…/basic.ics).")
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
-    fd = os.open(ICAL_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w") as out:
-        out.write(value)
-    os.chmod(ICAL_FILE, 0o600)
-    set_setting("sync_error", "")
-    set_setting("synced_at", "0")
-
-
 def forget_calendar() -> None:
-    ICAL_FILE.unlink(missing_ok=True)
     with db_lock:
         conn.execute("DELETE FROM calendar_events WHERE status IN ('pending', 'gone', 'missed')")
         conn.execute("DELETE FROM settings WHERE key IN ('sync_error', 'synced_at')")
         conn.commit()
 
 
-def fetch_ics(url: str) -> bytes:
-    # The URL is the secret: errors are reduced to type and status so it never reaches logs or the page.
-    try:
-        with requests.get(url, stream=True, timeout=30) as response:
-            if response.status_code != 200:
-                raise RuntimeError(f"Google Calendar ha risposto HTTP {response.status_code}")
-            body = bytearray()
-            for chunk in response.iter_content(chunk_size=256 * 1024):
-                body.extend(chunk)
-                if len(body) > ICS_MAX_BYTES:
-                    raise RuntimeError("calendario troppo grande")
-            return bytes(body)
-    except requests.RequestException as error:
-        raise RuntimeError(f"calendario non raggiungibile ({type(error).__name__})") from None
-
-
 def calendar_sync() -> str | None:
-    """Returns an error message, or None when the feed was read and applied."""
-    url = ical_url()
-    if not url:
+    """Returns an error message, or None when the calendar was read and applied."""
+    if not google.connected():
         return None
     with sync_lock:
         now = time.time()
         try:
-            occurrences = meetcal.parse(fetch_ics(url), now, owners=[OWNER_EMAIL], local_tz=LOCAL_TZ)
+            items = google.list_events(now - meetcal.LOOKBACK, now + meetcal.HORIZON)
+            occurrences = meetcal.parse_events(items, LOCAL_TZ)
         except Exception as error:
-            message = str(error).replace(url, "<ical>")[:200] if isinstance(error, RuntimeError) else f"calendario illeggibile ({type(error).__name__})"
+            # Only our own messages are shown: library errors could quote URLs or responses.
+            message = str(error) if isinstance(error, gcal.GoogleError) else f"Google Calendar non raggiungibile ({type(error).__name__})"
             set_setting("sync_error", message)
             set_setting("synced_at", str(now))
             log(None, f"calendar sync failed: {message}")
@@ -395,7 +379,7 @@ def launch_for_calendar(meeting_url: str, title: str) -> str:
 def calendar_loop() -> None:
     while running:
         try:
-            if ical_url():
+            if google.connected():
                 if time.time() - float(setting("synced_at", "0") or 0) >= CALENDAR_SYNC_SECONDS:
                     calendar_sync()
                 meetcal.run_due(conn, db_lock, time.time(), autojoin(), launch_for_calendar, log)
@@ -428,10 +412,29 @@ def calendar_status(row: sqlite3.Row, on: bool) -> str:
     return "il bot entra da solo un minuto prima"
 
 
+def google_setup() -> str:
+    redirect = html.escape(google.redirect_uri)
+    return f"""<details open><summary>Configurazione Google (una tantum)</summary>
+<p class="meta">Crea un client OAuth "Applicazione web" in Google Cloud Console e incolla qui sotto le sue credenziali. URI di reindirizzamento autorizzato da copiare:</p>
+<input readonly value="{redirect}" onclick="this.select()" aria-label="URI di reindirizzamento">
+<form method="post" action="{BASE_PATH}/google/credentials">
+<input name="client_id" required autocomplete="off" spellcheck="false" placeholder="Client ID (…apps.googleusercontent.com)">
+<input name="client_secret" type="password" required autocomplete="off" placeholder="Client secret">
+<button>Salva</button></form></details>"""
+
+
 def calendar_section() -> str:
+    if not google.configured():
+        return f'<h2>Riunioni dal calendario</h2><p class="meta">Collega Google Calendar e il bot entra da solo in ogni Meet in agenda.</p>{google_setup()}'
+    if not google.connected():
+        sync_error = setting("sync_error")
+        error = f'<p class="err">{html.escape(sync_error)}</p>' if sync_error else ""
+        return f"""<h2>Riunioni dal calendario</h2><p class="meta">Collega Google Calendar e il bot entra da solo in ogni Meet in agenda.</p>{error}
+<a class="gbtn" href="{BASE_PATH}/google/connect" target="_top">{GOOGLE_CALENDAR_ICON}<span>Collega il tuo account Google Calendar</span></a>
+<details><summary>Configurazione Google</summary><p class="meta">Client ID salvato: {html.escape(google.client_id())}</p>
+<form method="post" action="{BASE_PATH}/google/reset"><button class="ghost">Cancella le credenziali Google</button></form></details>"""
     now = time.time()
     on = autojoin()
-    configured = bool(ical_url())
     items = []
     for row in meetcal.upcoming(conn, db_lock, now):
         toggle = ""
@@ -444,35 +447,30 @@ def calendar_section() -> str:
             f'<li><div><b>{html.escape(row["title"] or "")}</b>'
             f'<div class="meta">{meetcal.day_label(row["start"], now, LOCAL_TZ)} · {html.escape(calendar_status(row, on))}</div>{error}</div>{toggle}</li>'
         )
-    if configured:
-        synced = float(setting("synced_at", "0") or 0)
-        sync_error = setting("sync_error")
-        when = datetime.fromtimestamp(synced, LOCAL_TZ).strftime("%H:%M") if synced else "mai"
-        sync_line = (f'<p class="err">Ultima lettura del calendario ({when}): {html.escape(sync_error)}</p>' if sync_error
-                     else f'<p class="meta">Calendario letto alle {when}, si aggiorna ogni 5 minuti.</p>')
-        empty = '<li class="meta">Nessun Meet nelle prossime 24 ore.</li>'
-        switch_label, switch_cls = ("Ingresso automatico: ON", "on") if on else ("Ingresso automatico: OFF", "ghost")
-        body = f"""<form method="post" action="{BASE_PATH}/calendar/autojoin"><button class="{switch_cls}">{switch_label}</button></form>
-{sync_line}<ul>{"".join(items) or empty}</ul>"""
-        settings_form = f"""<p class="meta">Indirizzo iCal salvato: https://calendar.google.com/••••••••</p>
-<form method="post" action="{BASE_PATH}/calendar/settings"><input name="ical_url" type="password" required autocomplete="off" placeholder="Nuovo indirizzo segreto in formato iCal"><button>Sostituisci</button></form>
-<form method="post" action="{BASE_PATH}/calendar/sync"><button class="ghost">Rileggi ora</button></form>
-<form method="post" action="{BASE_PATH}/calendar/forget"><button class="ghost">Scollega il calendario</button></form>"""
-    else:
-        body = '<p class="meta">Collega Google Calendar e il bot entra da solo in ogni Meet in agenda.</p>'
-        settings_form = f"""<form method="post" action="{BASE_PATH}/calendar/settings"><input name="ical_url" type="password" required autocomplete="off" placeholder="Indirizzo segreto in formato iCal">
-<button>Collega</button></form>
-<p class="meta">Google Calendar → Impostazioni → il tuo calendario → Integra calendario → Indirizzo segreto in formato iCal.</p>"""
-    return f"""<h2>Riunioni dal calendario</h2>{body}
-<details{"" if configured else " open"}><summary>Collegamento a Google Calendar</summary>{settings_form}
-<p class="meta">Il bot salta le riunioni rifiutate, quelle tutto il giorno e quelle con #nobot nel titolo o nella descrizione.</p></details>"""
+    synced = float(setting("synced_at", "0") or 0)
+    sync_error = setting("sync_error")
+    when = datetime.fromtimestamp(synced, LOCAL_TZ).strftime("%H:%M") if synced else "mai"
+    sync_line = (f'<p class="err">Ultima lettura del calendario ({when}): {html.escape(sync_error)}</p>' if sync_error
+                 else f'<p class="meta">Calendario letto alle {when}, si aggiorna ogni 5 minuti.</p>')
+    switch_label, switch_cls = ("Ingresso automatico: ON", "on") if on else ("Ingresso automatico: OFF", "ghost")
+    empty = '<li class="meta">Nessun Meet nelle prossime 24 ore.</li>'
+    account = html.escape(google.email() or "account Google")
+    return f"""<h2>Riunioni dal calendario</h2>
+<div class="row"><span class="gcal">{GOOGLE_CALENDAR_ICON}<span>Collegato come <b>{account}</b></span></span>
+<form method="post" action="{BASE_PATH}/google/disconnect"><button class="ghost">Scollega</button></form></div>
+<div class="row"><form method="post" action="{BASE_PATH}/calendar/autojoin"><button class="{switch_cls}">{switch_label}</button></form>
+<form method="post" action="{BASE_PATH}/calendar/sync"><button class="ghost">Sincronizza ora</button></form></div>
+{sync_line}<ul>{"".join(items) or empty}</ul>
+<p class="meta">Il bot salta le riunioni rifiutate, quelle tutto il giorno e quelle con #nobot nel titolo o nella descrizione.</p>"""
 
 
 def calendar_json() -> dict:
     now = time.time()
     on = autojoin()
     return {
-        "configured": bool(ical_url()),
+        "configured": google.configured(),
+        "connected": google.connected(),
+        "account": google.email() if google.connected() else None,
         "autojoin": on,
         "synced_at": float(setting("synced_at", "0") or 0) or None,
         "sync_error": setting("sync_error") or None,
@@ -485,18 +483,11 @@ def calendar_json() -> dict:
 
 
 def calendar_action(action: str, fields: dict) -> tuple[str, bool, dict]:
-    if action == "settings":
-        save_ical_url(fields.get("ical_url") or "")
-        error = calendar_sync()
-        if error:
-            return f"Indirizzo salvato, ma il calendario non si legge: {error}", False, {"ok": False, "error": error}
-        return "Calendario collegato.", True, {"ok": True}
-    if action == "forget":
-        forget_calendar()
-        return "Calendario scollegato.", True, {"ok": True}
     if action == "sync":
+        if not google.connected():
+            raise ValueError("Google Calendar non è collegato.")
         error = calendar_sync()
-        return (error, False, {"ok": False, "error": error}) if error else ("Calendario riletto.", True, {"ok": True})
+        return (error, False, {"ok": False, "error": error}) if error else ("Calendario sincronizzato.", True, {"ok": True})
     if action == "autojoin":
         value = fields.get("enabled")
         enabled = (str(value).lower() in ("1", "true", "on")) if value is not None else not autojoin()
@@ -508,6 +499,25 @@ def calendar_action(action: str, fields: dict) -> tuple[str, bool, dict]:
         if enabled is None:
             raise ValueError("Riunione non trovata.")
         return ("Il bot entrerà in questa riunione." if enabled else "Il bot non entrerà in questa riunione."), True, {"ok": True, "enabled": enabled}
+    raise ValueError("Azione sconosciuta.")
+
+
+def google_action(action: str, fields: dict) -> tuple[str, bool, dict]:
+    if action == "credentials":
+        google.set_credentials(fields.get("client_id") or "", fields.get("client_secret") or "")
+        forget_calendar()
+        log(None, "Google OAuth client configured")
+        return "Credenziali salvate. Ora collega il tuo account Google Calendar.", True, {"ok": True}
+    if action == "disconnect":
+        revoked = google.disconnect()
+        forget_calendar()
+        log(None, f"Google Calendar disconnected (revoked={revoked})")
+        message = "Google Calendar scollegato." if revoked else "Scollegato qui; Google non ha confermato la revoca: toglila da myaccount.google.com/permissions."
+        return message, True, {"ok": True, "revoked": revoked}
+    if action == "reset":
+        google.clear_credentials()
+        forget_calendar()
+        return "Credenziali Google cancellate.", True, {"ok": True}
     raise ValueError("Azione sconosciuta.")
 
 
@@ -523,7 +533,9 @@ def render(message: str = "", ok: bool = True) -> bytes:
             f'<li><div><b>{html.escape(row["title"] or row["meeting_url"])}</b>'
             f'<div class="meta">{when} · {html.escape(status_text(row))}{link}</div>{error}</div>{leave}</li>'
         )
-    flash = f'<p class="{"ok" if ok else "err"}">{html.escape(message)}</p>' if message else ""
+    if not message:
+        message, ok = take_flash()
+    notice = f'<p class="{"ok" if ok else "err"}">{html.escape(message)}</p>' if message else ""
     page = f"""<!doctype html><html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Meet bot</title>
 <meta http-equiv="refresh" content="30;url={BASE_PATH}/">
@@ -533,8 +545,12 @@ button{{background:#111;color:#fff;border:0;cursor:pointer}} .ghost{{background:
 ul{{list-style:none;padding:0}} li{{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #e5e5e5}}
 li b{{word-break:break-all}} .meta{{color:#666;font-size:14px}} .err{{color:#b00020;font-size:14px}} .ok{{color:#0a7a32}}
 h2{{font-size:20px;margin:28px 0 4px}} .on{{background:#0a7a32;color:#fff;width:auto;padding:8px 12px}} summary{{cursor:pointer;color:#666;margin:12px 0}}
-@media (prefers-color-scheme:dark){{body{{background:#111;color:#eee}} li{{border-color:#333}} .meta{{color:#aaa}} input{{background:#222;color:#eee;border-color:#444}} button{{background:#eee;color:#111}} .ghost{{background:#333;color:#eee}} .on{{background:#1f9d55;color:#fff}} summary{{color:#aaa}}}}</style>
-</head><body><h1>Registra un Meet</h1>{flash}
+.row{{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:8px 0}} .row form{{margin:0}} .row button{{margin:0}}
+.gcal{{display:inline-flex;gap:10px;align-items:center;font-size:15px}} .gcal svg{{flex:none}}
+.gbtn{{display:inline-flex;align-items:center;gap:12px;height:44px;padding:0 20px 0 14px;margin:10px 0;border:1px solid #747775;border-radius:22px;background:#fff;color:#1f1f1f;font:500 15px/1 Roboto,"Google Sans",Arial,system-ui,sans-serif;letter-spacing:.25px;text-decoration:none;box-sizing:border-box}}
+.gbtn:hover{{background:#f6f8fc;box-shadow:0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15)}} .gbtn:focus-visible{{outline:2px solid #0b57d0;outline-offset:2px}}
+@media (prefers-color-scheme:dark){{body{{background:#111;color:#eee}} li{{border-color:#333}} .meta{{color:#aaa}} input{{background:#222;color:#eee;border-color:#444}} button{{background:#eee;color:#111}} .ghost{{background:#333;color:#eee}} .on{{background:#1f9d55;color:#fff}} summary{{color:#aaa}} .gbtn{{background:#131314;color:#e3e3e3;border-color:#8e918f}} .gbtn:hover{{background:#1f1f22}}}}</style>
+</head><body><h1>Registra un Meet</h1>{notice}
 <form method="post" action="{BASE_PATH}/join">
 <input name="meeting_url" type="url" required placeholder="https://meet.google.com/abc-defg-hij" autocomplete="off">
 <input name="title" placeholder="Titolo (facoltativo)" maxlength="120">
@@ -626,7 +642,46 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, json.dumps(data).encode(), "application/json")
         if route == "/api/calendar":
             return self.send(200, json.dumps(calendar_json()).encode(), "application/json")
+        if route == "/google/connect":
+            return self.google_connect()
+        if route == "/google/callback":
+            return self.google_callback()
         self.send(404, b"not found", "text/plain")
+
+    def session_key(self) -> str:
+        cookies = [part.strip() for part in (self.headers.get("Cookie") or "").split(";")]
+        return "&".join(sorted(c for c in cookies if "next-auth.session-token" in c.split("=", 1)[0]))
+
+    def back_to_dashboard(self, message: str, ok: bool) -> None:
+        flash(message, ok)
+        self.send(302, b"", "text/plain", {"Location": DASHBOARD_URL})
+
+    def google_connect(self) -> None:
+        try:
+            url = google.authorize_url(self.session_key())
+        except gcal.GoogleError as error:
+            return self.back_to_dashboard(str(error), False)
+        self.send(302, b"", "text/plain", {"Location": url})
+
+    def google_callback(self) -> None:
+        query = {k: v[0] for k, v in parse_qs(urlsplit(self.path).query).items()}
+        if query.get("error"):
+            google.pending.pop(query.get("state") or "", None)
+            denied = query["error"] == "access_denied"
+            return self.back_to_dashboard("Collegamento annullato." if denied else f"Google ha risposto: {query['error'][:60]}", False)
+        try:
+            email = google.finish(query.get("state") or "", query.get("code") or "", self.session_key())
+        except gcal.GoogleError as error:
+            log(None, f"Google OAuth callback failed: {error}")
+            return self.back_to_dashboard(str(error), False)
+        except Exception as error:
+            log(None, f"Google OAuth callback failed: {type(error).__name__}")
+            return self.back_to_dashboard("Google non risponde, riprova tra poco.", False)
+        log(None, "Google Calendar connected")
+        set_setting("sync_error", "")
+        error = calendar_sync()
+        message = f"Google Calendar collegato come {email or 'account Google'}."
+        self.back_to_dashboard(message if not error else f"{message} Lettura del calendario non riuscita: {error}", not error)
 
     def do_POST(self):
         kind = self.gate()
@@ -650,6 +705,8 @@ class Handler(BaseHTTPRequestHandler):
                 result = {"ok": True, "bot_id": bot_id}
             elif route.startswith(("/calendar/", "/api/calendar/")):
                 message, ok, result = calendar_action(route.split("/calendar/", 1)[1], fields)
+            elif route.startswith("/google/"):
+                message, ok, result = google_action(route.split("/google/", 1)[1], fields)
             elif route.startswith("/leave/") or route.startswith("/api/leave/"):
                 bot_id = route.rsplit("/", 1)[1]
                 if not rows("bot_id = ?", (bot_id,)):
@@ -658,7 +715,7 @@ class Handler(BaseHTTPRequestHandler):
                 message, ok, result = "Il bot sta uscendo, poi salva la registrazione.", True, {"ok": True}
             else:
                 return self.send(404, b"not found", "text/plain")
-        except ValueError as error:
+        except (ValueError, gcal.GoogleError) as error:
             message, ok, result = str(error), False, {"ok": False, "error": str(error)}
         except Exception as error:
             traceback.print_exc()

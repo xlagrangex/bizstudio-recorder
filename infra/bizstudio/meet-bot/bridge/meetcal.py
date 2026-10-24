@@ -1,4 +1,4 @@
-"""Google Calendar auto-join: parse the secret iCal feed and decide when to send a bot."""
+"""Google Calendar auto-join: turn Calendar API events into occurrences and decide when to send a bot."""
 
 import hashlib
 import re
@@ -6,17 +6,14 @@ import sqlite3
 import threading
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Callable, Iterable
 from zoneinfo import ZoneInfo
-
-import icalendar
-import recurring_ical_events
 
 MEET_LINK = re.compile(r"https?://meet\.google\.com/([a-z]{3,4}-[a-z]{4}-[a-z]{3,4})(?![a-z-])", re.I)
 NOBOT = "#nobot"
 HORIZON = 24 * 3600
-# Occurrences that already started are still fetched, so a bridge restart mid-meeting can join late.
+# Events that already started are still fetched, so a bridge restart mid-meeting can join late.
 LOOKBACK = 3600
 LEAD_SECONDS = 60
 LATE_SECONDS = 30 * 60
@@ -44,71 +41,51 @@ def event_id(key: str) -> str:
     return hashlib.sha1(key.encode()).hexdigest()[:16]
 
 
-def meet_link(event) -> str | None:
-    for field in ("X-GOOGLE-CONFERENCE", "LOCATION", "DESCRIPTION"):
-        match = MEET_LINK.search(str(event.get(field) or ""))
+def meet_link(item: dict) -> str | None:
+    candidates = [item.get("hangoutLink") or ""]
+    candidates += [point.get("uri") or "" for point in (item.get("conferenceData") or {}).get("entryPoints") or []
+                   if point.get("entryPointType") == "video"]
+    candidates += [item.get("location") or "", item.get("description") or ""]
+    for text in candidates:
+        match = MEET_LINK.search(text)
         if match:
             return f"https://meet.google.com/{match.group(1).lower()}"
     return None
 
 
-def declined(event, owners: set[str]) -> bool:
-    attendees = event.get("ATTENDEE") or []
-    if not isinstance(attendees, list):
-        attendees = [attendees]
-    for attendee in attendees:
-        address = str(attendee).lower().removeprefix("mailto:")
-        if address in owners and str(attendee.params.get("PARTSTAT", "")).upper() == "DECLINED":
-            return True
-    return False
+def declined(item: dict) -> bool:
+    return any(a.get("self") and a.get("responseStatus") == "declined" for a in item.get("attendees") or [])
 
 
-def timestamp(value: datetime, local_tz: ZoneInfo) -> float:
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=local_tz)
-    return value.timestamp()
+def timestamp(value: dict, local_tz: ZoneInfo) -> float | None:
+    """Calendar API start/end object; None for all-day dates."""
+    if not value.get("dateTime"):
+        return None
+    moment = datetime.fromisoformat(value["dateTime"].replace("Z", "+00:00"))
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=ZoneInfo(value["timeZone"]) if value.get("timeZone") else local_tz)
+    return moment.timestamp()
 
 
-def parse(ics: bytes, now: float, owners: Iterable[str] = (), local_tz: ZoneInfo = ZoneInfo("Europe/Rome"),
-          horizon: int = HORIZON) -> list[Occurrence]:
-    """Meet occurrences overlapping [now - LOOKBACK, now + horizon] that the bot should consider."""
-    calendar = icalendar.Calendar.from_ical(ics)
-    owner_set = {email.lower() for email in owners if email}
-    calname = str(calendar.get("X-WR-CALNAME") or "")
-    if "@" in calname:
-        owner_set.add(calname.lower())
-    recurring = {str(c.get("UID")) for c in calendar.walk("VEVENT")
-                 if c.get("RRULE") or c.get("RDATE") or c.get("RECURRENCE-ID")}
-    window_start = datetime.fromtimestamp(now - LOOKBACK, timezone.utc)
-    window_end = datetime.fromtimestamp(now + horizon, timezone.utc)
+def parse_events(items: Iterable[dict], local_tz: ZoneInfo = ZoneInfo("Europe/Rome")) -> list[Occurrence]:
+    """Calendar API events.list items (singleEvents=true) the bot should consider."""
     found: dict[str, Occurrence] = {}
-    for event in recurring_ical_events.of(calendar).between(window_start, window_end):
-        dtstart = event.decoded("DTSTART")
-        if not isinstance(dtstart, datetime):
+    for item in items:
+        if item.get("status") == "cancelled" or not item.get("id"):
             continue
-        if str(event.get("STATUS") or "").upper() == "CANCELLED":
+        start = timestamp(item.get("start") or {}, local_tz)
+        if start is None:
             continue
-        title = str(event.get("SUMMARY") or "").strip()
-        if NOBOT in f"{title}\n{event.get('DESCRIPTION') or ''}".lower():
+        title = (item.get("summary") or "").strip()
+        if NOBOT in f"{title}\n{item.get('description') or ''}".lower():
             continue
-        url = meet_link(event)
-        if not url or declined(event, owner_set):
+        url = meet_link(item)
+        if not url or declined(item):
             continue
-        start = timestamp(dtstart, local_tz)
-        if event.get("DTEND"):
-            dtend = event.decoded("DTEND")
-            end = timestamp(dtend, local_tz) if isinstance(dtend, datetime) else start + 3600
-        elif event.get("DURATION"):
-            end = start + event.decoded("DURATION").total_seconds()
-        else:
-            end = start + 3600
-        uid = str(event.get("UID") or f"{title}|{start:.0f}")
-        key = uid
-        if uid in recurring:
-            # RECURRENCE-ID is the original slot, so a moved occurrence keeps its key and its toggle.
-            rid = event.decoded("RECURRENCE-ID") if event.get("RECURRENCE-ID") else dtstart
-            key = f"{uid}|{timestamp(rid, local_tz) if isinstance(rid, datetime) else start:.0f}"
-        found[key] = Occurrence(key, uid, start, end, title or "Riunione senza titolo", url)
+        end = timestamp(item.get("end") or {}, local_tz) or start + 3600
+        # With singleEvents an instance id is "<recurringEventId>_<original start>": it survives moves.
+        found[item["id"]] = Occurrence(item["id"], item.get("recurringEventId") or item["id"], start, end,
+                                       title or "Riunione senza titolo", url)
     return sorted(found.values(), key=lambda o: o.start)
 
 

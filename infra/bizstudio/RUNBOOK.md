@@ -29,9 +29,11 @@ Limiti: media-server, cap-web e worker hanno `mem_limit: 1g`. Se un container vi
 
 ## Meet bot dal calendario
 
-meet-bridge legge ogni 5 minuti l'indirizzo segreto iCal di Google Calendar (incollato su /meetbot/, salvato in `/root/bizstudio-recorder/meet/bridge/ical_url` con permessi 600: è un segreto, non stamparlo) e manda il bot un minuto prima di ogni Meet delle prossime 24 ore. Salta riunioni rifiutate, tutto il giorno, annullate e con `#nobot` nel titolo o nella descrizione. Un bot per occorrenza; se c'è già un bot in riunione riprova fino a 30 minuti dopo l'inizio. Lo scheduling è nel bridge: Attendee ha `join_at` ma richiede il suo `run_scheduler`, che qui non gira.
+meet-bridge è collegato a Google Calendar via OAuth (scope `calendar.events.readonly` + email). Client ID/secret e refresh token stanno in `/root/bizstudio-recorder/meet/bridge/google.json` (permessi 600: sono segreti, non stamparlo). Si configura e si collega da /meetbot/ (Dashboard → Meet Bot); redirect URI registrato in Google Cloud: `https://rec.bizstudio.it/meetbot/google/callback`.
 
-Stato: `docker exec bizrec-meet-meet-bridge-1 python -c "import sqlite3; [print(tuple(r)) for r in sqlite3.connect('/state/bridge.db').execute('SELECT title, datetime(start, \"unixepoch\"), enabled, status, bot_id, error FROM calendar_events ORDER BY start')]"`. Test: `docker exec -w /app bizrec-meet-meet-bridge-1 python test_calendar.py`.
+Ogni 5 minuti legge `events.list` sul calendario principale (prossime 24 ore) e manda il bot un minuto prima di ogni Meet. Salta riunioni rifiutate, tutto il giorno, annullate e con `#nobot` nel titolo o nella descrizione. Un bot per occorrenza; se c'è già un bot in riunione riprova fino a 30 minuti dopo l'inizio. Lo scheduling è nel bridge: Attendee ha `join_at` ma richiede il suo `run_scheduler`, che qui non gira.
+
+Se Google revoca l'accesso (password cambiata, permesso tolto da myaccount.google.com/permissions) la pagina torna al pulsante "Collega il tuo account Google Calendar". Stato: `docker exec bizrec-meet-meet-bridge-1 python -c "import sqlite3; [print(tuple(r)) for r in sqlite3.connect('/state/bridge.db').execute('SELECT title, datetime(start, \"unixepoch\"), enabled, status, bot_id, error FROM calendar_events ORDER BY start')]"`. Test: `docker exec -w /app bizrec-meet-meet-bridge-1 sh -c 'python test_calendar.py && python test_google.py'`.
 
 ## Log
 
