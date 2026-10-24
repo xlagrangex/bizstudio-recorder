@@ -27,8 +27,12 @@ test("targets map to their packaging platform and main binary", () => {
 	assert.equal(targetPlatform("x86_64-pc-windows-msvc"), "win32");
 	assert.equal(targetPlatform("x86_64-unknown-linux-gnu"), "linux");
 	assert.equal(targetPlatform("wasm32-unknown-unknown"), null);
-	assert.equal(mainBinaryName("x86_64-pc-windows-msvc"), "Cap.exe");
-	assert.equal(mainBinaryName("aarch64-apple-darwin"), "Cap");
+	assert.equal(
+		mainBinaryName("x86_64-pc-windows-msvc"),
+		"Bizstudio Rec.exe",
+	);
+	assert.equal(mainBinaryName("aarch64-apple-darwin"), "Bizstudio Rec");
+	assert.equal(mainBinaryName("x86_64-unknown-linux-gnu"), "Bizstudio Rec");
 	assert.equal(
 		gpuiBinaryPath("x86_64-pc-windows-msvc"),
 		path.join(
@@ -38,10 +42,10 @@ test("targets map to their packaging platform and main binary", () => {
 	);
 });
 
-test("the GPUI app keeps the identity every existing install updates into", () => {
-	assert.equal(gpuiConfig.productName, "Cap");
-	assert.equal(gpuiConfig.mainBinaryName, "Cap");
-	assert.equal(gpuiConfig.identifier, "so.cap.desktop");
+test("the GPUI app ships under the Bizstudio identity with no Cap executable", () => {
+	assert.equal(gpuiConfig.productName, "Bizstudio Rec");
+	assert.equal(gpuiConfig.mainBinaryName, "Bizstudio Rec");
+	assert.equal(gpuiConfig.identifier, "it.bizstudio.recorder");
 	assert.equal(
 		gpuiConfig.plugins.updater.pubkey,
 		tauriProduction.plugins.updater.pubkey,
@@ -59,15 +63,14 @@ test("the GPUI app keeps the identity every existing install updates into", () =
 			`const UPDATER_PUBLIC_KEY: &str = "${gpuiConfig.plugins.updater.pubkey}";`,
 		),
 	);
-	assert.deepEqual(
-		gpuiConfig.plugins["deep-link"],
-		tauriConfig.plugins["deep-link"],
-	);
-	assert.equal(gpuiConfig.bundle.createUpdaterArtifacts, true);
+	assert.deepEqual(gpuiConfig.plugins["deep-link"].desktop.schemes, [
+		...tauriConfig.plugins["deep-link"].desktop.schemes,
+		"bizrec",
+	]);
+	assert.equal(gpuiConfig.bundle.createUpdaterArtifacts, false);
 });
 
 test("the GPUI bundle takes over the identity the Tauri app shipped with", () => {
-	assert.equal(tauriProduction.productName, gpuiConfig.productName);
 	assert.equal(tauriProduction.identifier, gpuiConfig.identifier);
 	assert.deepEqual(
 		tauriProduction.plugins.updater.endpoints,

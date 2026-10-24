@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import * as fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,8 +27,14 @@ export function targetPlatform(target) {
 	return null;
 }
 
+const gpuiMainBinaryName = JSON.parse(
+	readFileSync(path.join(gpuiDirectory, "tauri.conf.json"), "utf8"),
+).mainBinaryName;
+
 export function mainBinaryName(target) {
-	return targetPlatform(target) === "win32" ? "Cap.exe" : "Cap";
+	return targetPlatform(target) === "win32"
+		? `${gpuiMainBinaryName}.exe`
+		: gpuiMainBinaryName;
 }
 
 export function gpuiBinaryPath(target, profile = "release") {

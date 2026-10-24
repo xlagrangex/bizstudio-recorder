@@ -123,9 +123,9 @@ fn is_cap_gpui(pid: i32) -> bool {
 
 fn is_cap_gpui_image(path: &Path) -> bool {
     #[cfg(windows)]
-    const IMAGE_NAMES: [&str; 2] = ["Cap.exe", "cap-gpui.exe"];
+    const IMAGE_NAMES: [&str; 3] = ["Bizstudio Rec.exe", "Cap.exe", "cap-gpui.exe"];
     #[cfg(not(windows))]
-    const IMAGE_NAMES: [&str; 2] = ["Cap", "cap-gpui"];
+    const IMAGE_NAMES: [&str; 3] = ["Bizstudio Rec", "Cap", "cap-gpui"];
 
     let Some(name) = path.file_name().and_then(std::ffi::OsStr::to_str) else {
         return false;
@@ -1261,9 +1261,9 @@ mod tests {
     #[test]
     fn gpui_process_image_must_match_exactly() {
         #[cfg(windows)]
-        let names = ["cap-gpui.exe", "Cap.exe"];
+        let names = ["cap-gpui.exe", "Cap.exe", "Bizstudio Rec.exe"];
         #[cfg(not(windows))]
-        let names = ["cap-gpui", "Cap"];
+        let names = ["cap-gpui", "Cap", "Bizstudio Rec"];
 
         for name in names {
             assert!(is_cap_gpui_image(Path::new(name)));
