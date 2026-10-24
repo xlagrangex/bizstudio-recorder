@@ -21,6 +21,8 @@ VOCABULARY = os.environ.get(
 SILENCE_DB = -55.0
 MAX_CUE_WORDS = 14
 MAX_CUE_SECONDS = 7.0
+MAX_SECONDS_PER_WORD = 5.0
+NOISE_TAG = re.compile(r"\[[^\]]*\]")
 
 BRAND_FIXES = [
     (re.compile(r"(?<![\w./@-])(?:biz+|bis*|bit?z)[\s-]?studio(?![\w.@-]*\w)", re.IGNORECASE), "Bizstudio"),
@@ -200,15 +202,40 @@ def transcribe_chunk(audio: Path, offset: float, length: float, speech: list[tup
     return segments, cost, model
 
 
-def transcribe(source: Path, workdir: Path) -> dict:
+def _cue_key(text: str) -> str:
+    return re.sub(r"\W+", " ", text.lower()).strip()
+
+
+def drop_hallucinations(chunks: list[list[dict]]) -> list[dict]:
+    """Audio LLMs fill silence with noise tags, one word stretched over a whole chunk, or the
+    same line replayed chunk after chunk; none of that is speech."""
+    kept, previous = [], set()
+    for chunk in chunks:
+        keys = set()
+        for seg in chunk:
+            text = re.sub(r"\s+", " ", NOISE_TAG.sub("", seg["text"])).strip()
+            key = _cue_key(text)
+            if not re.search(r"\w", re.sub(r"\([^)]*\)", "", text)):
+                continue
+            keys.add(key)
+            if key in previous or seg["end"] - seg["start"] > MAX_SECONDS_PER_WORD * len(text.split()):
+                continue
+            kept.append({**seg, "text": text})
+        previous = keys
+    return kept
+
+
+def transcribe(source: Path, workdir: Path, on_chunk=lambda: None) -> dict:
     audio, duration = extract_audio(source, workdir)
     islands = speech_islands(audio, duration)
-    segments, total_cost, models = [], 0.0, set()
+    chunks, total_cost, models = [], 0.0, set()
     for start, end, speech in plan_chunks(islands):
         chunk_segments, cost, model = transcribe_chunk(audio, start, end - start, speech, workdir)
-        segments.extend(chunk_segments)
+        chunks.append(chunk_segments)
         total_cost += cost
         models.add(model)
+        on_chunk()
+    segments = drop_hallucinations(chunks)
     if not segments:
         raise NoAudio("no speech detected")
     speech_seconds = round(sum(hi - lo for lo, hi in islands), 1)

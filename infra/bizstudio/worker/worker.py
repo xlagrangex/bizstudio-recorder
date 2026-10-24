@@ -15,7 +15,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 import brain
-from transcribe import NoAudio, enrich, to_vtt, transcribe
+from transcribe import NoAudio, enrich, probe_duration, run, to_vtt, transcribe
 
 STATE_DIR = Path(os.environ.get("STATE_DIR", "/state"))
 POLL_SECONDS = int(os.environ.get("POLL_SECONDS", "20"))
@@ -28,13 +28,16 @@ LOCAL_TZ = ZoneInfo(os.environ.get("TZ_NOTES", "Europe/Rome"))
 PROCESSABLE_SOURCES = {"desktopMP4", "webMP4", "desktopSegments"}
 UNTOUCHED_STATUSES = {"COMPLETE", "SKIPPED", "NO_AUDIO", "ERROR"}
 DEFAULT_NAME = re.compile(
-    r"^(?:(?:Cap|Bizstudio(?: Recorder)?) (?:Recording|Screenshot) - .+|My Video|Untitled(?: Video)?)$"
+    r"^(?:(?:Cap|Bizstudio(?: Recorder)?) (?:Recording|Screenshot) - .+|My Video|Untitled(?: Video)?"
+    r"|.+ \d{4}-\d{2}-\d{2}(?: at)? \d{1,2}\.\d{2}(?:\.\d{2})?(?: [AP]M)?)$"
 )
 MEET_PREFIX = "Meet – "
 MEET_DEFAULT_NAME = re.compile(
     r"^Meet\s*[–—-]\s*\d{1,2}\s+[^\W\d_]+\s+\d{4}(?:,?\s+\d{1,2}[:.]\d{2})?$", re.IGNORECASE
 )
 TERMINAL = {"done", "no_audio", "skipped", "failed"}
+PREVIEW_GIF_ATTEMPTS = [(4.0, 8, 480, 48), (3.0, 6, 360, 32), (2.0, 5, 320, 24), (1.5, 4, 240, 16)]
+PREVIEW_GIF_MAX_BYTES = 1_500_000
 
 running = True
 last_skip: dict[str, str] = {}
@@ -47,6 +50,10 @@ class Permanent(Exception):
 def log(video_id: str | None, message: str) -> None:
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     print(f"{stamp} {video_id or '-'} {message}", flush=True)
+
+
+def beat() -> None:
+    (STATE_DIR / "heartbeat").touch()
 
 
 def state_db() -> sqlite3.Connection:
@@ -205,7 +212,7 @@ def stage_transcribe(db, client, video: dict, workdir: Path) -> dict:
     set_status(db, video["id"], "PROCESSING")
     source = fetch_source(client, video, workdir)
     started = time.monotonic()
-    result = transcribe(source, workdir)
+    result = transcribe(source, workdir, on_chunk=beat)
     result["elapsed"] = round(time.monotonic() - started, 1)
     vtt = to_vtt(result["segments"])
     client.put_object(
@@ -251,6 +258,56 @@ def stage_enrich(db, video: dict, transcript: dict, workdir: Path) -> dict:
     return ai
 
 
+def render_preview_gif(source: Path, target: Path) -> None:
+    """Mirrors the media server's generatePreviewGif so every card animates the same way."""
+    duration = probe_duration(source)
+    start = min(1.0, max(0.0, duration - 4.0))
+    for index, (seconds, fps, size, colors) in enumerate(PREVIEW_GIF_ATTEMPTS):
+        length = max(0.5, min(seconds, duration - start))
+        graph = (
+            f"fps={fps},scale='min({size},iw)':'min({size},ih)':force_original_aspect_ratio=decrease,"
+            f"scale=trunc(iw/2)*2:trunc(ih/2)*2,split[s0][s1];[s0]palettegen=stats_mode=diff:max_colors={colors}[p];"
+            "[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle"
+        )
+        run(["ffmpeg", "-y", "-v", "error", "-threads", "1", "-ss", f"{start}", "-t", f"{length}", "-i", str(source),
+             "-an", "-filter_complex", graph, "-loop", "0", "-f", "gif", str(target)], timeout=300)
+        size_bytes = target.stat().st_size if target.exists() else 0
+        if 0 < size_bytes <= PREVIEW_GIF_MAX_BYTES or (size_bytes and index == len(PREVIEW_GIF_ATTEMPTS) - 1):
+            return
+    raise RuntimeError("ffmpeg produced no preview GIF")
+
+
+def ensure_preview_gif(client, video: dict, workdir: Path) -> bool:
+    prefix = f"{video['ownerId']}/{video['id']}"
+    key = f"{prefix}/preview/animated-preview.gif"
+    if object_exists(client, key):
+        return False
+    source = workdir / "source.mp4"
+    if not source.exists():
+        video_key = next((k for k in [f"{prefix}/result.mp4", video.get("rawFileKey")] if k and object_exists(client, k)), None)
+        if not video_key:
+            return False
+        client.download_file(BUCKET, video_key, str(source))
+    target = workdir / "animated-preview.gif"
+    try:
+        render_preview_gif(source, target)
+        client.upload_file(
+            str(target), BUCKET, key,
+            ExtraArgs={"ContentType": "image/gif", "CacheControl": "public, max-age=31536000, immutable"},
+        )
+    finally:
+        target.unlink(missing_ok=True)
+    return True
+
+
+def try_preview_gif(client, video: dict, workdir: Path) -> None:
+    try:
+        if ensure_preview_gif(client, video, workdir):
+            log(video["id"], "animated preview GIF generated")
+    except Exception as error:
+        log(video["id"], f"animated preview GIF failed: {type(error).__name__}: {str(error)[:300]}")
+
+
 def drop_media(workdir: Path) -> None:
     for leftover in [*workdir.glob("source.*"), *workdir.glob("*.mp3")]:
         leftover.unlink(missing_ok=True)
@@ -274,10 +331,12 @@ def process(conn, db, client, video: dict, job: sqlite3.Row | None) -> None:
     except NoAudio as reason:
         set_status(db, video_id, "NO_AUDIO")
         set_job(conn, video_id, stage="no_audio", last_error=str(reason))
+        try_preview_gif(client, video, workdir)
         drop_media(workdir)
         log(video_id, f"no audio: {reason}")
         return
     set_job(conn, video_id, stage="transcribed", cost_usd=transcript["cost"])
+    try_preview_gif(client, video, workdir)
     log(video_id, f"transcribed {transcript['duration']:.0f}s audio ({transcript.get('speech_seconds', '?')}s speech) in {transcript.get('elapsed', 0)}s, "
                   f"{len(transcript['segments'])} segments, ${transcript['cost']:.4f} via {','.join(transcript['models'])}")
 
@@ -367,7 +426,7 @@ def main() -> None:
                 tick(conn)
         except Exception:
             traceback.print_exc()
-        (STATE_DIR / "heartbeat").touch()
+        beat()
         for _ in range(POLL_SECONDS):
             if not running:
                 break
