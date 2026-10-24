@@ -135,6 +135,11 @@ services:
       CAP_URL: http://cap-web:3000
       CAP_API_KEY: ${MEETBOT_CAP_API_KEY}
       CAP_S3_INTERNAL: http://minio:9000
+      # Cap's desktop create API has no visibility field, so the bridge sets
+      # videos.public itself. Meetings include third parties: private by default.
+      MYSQL_HOST: mysql
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MEETBOT_PUBLIC_DEFAULT: "false"
       PUBLIC_URL: https://rec.bizstudio.it
       BASE_PATH: /meetbot
       # The page is gated by the owner's own Bizstudio Recorder login (session

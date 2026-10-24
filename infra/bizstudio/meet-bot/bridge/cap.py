@@ -8,12 +8,15 @@ import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
+import pymysql
 import requests
 
 CAP_URL = os.environ.get("CAP_URL", "http://cap-web:3000").rstrip("/")
 CAP_API_KEY = os.environ.get("CAP_API_KEY", "")
 CAP_S3_INTERNAL = os.environ.get("CAP_S3_INTERNAL", "").rstrip("/")
 PART_SIZE = int(os.environ.get("CAP_PART_SIZE", str(64 * 1024 * 1024)))
+PUBLIC_DEFAULT = os.environ.get("MEETBOT_PUBLIC_DEFAULT", "false") == "true"
+OWNER_ID = os.environ.get("MEETBOT_OWNER_ID", "cng79m7693kkajy")
 
 
 class CapError(Exception):
@@ -97,6 +100,29 @@ def create_video(name: str, meta: dict) -> str:
         "fps": meta["fps"],
     })
     return data["id"]
+
+
+def set_public(video_id: str, public: bool) -> None:
+    # The desktop create endpoint takes visibility from the org default and
+    # exposes no API-key route to change it, so the column is set directly.
+    db = pymysql.connect(
+        host=os.environ.get("MYSQL_HOST", "mysql"),
+        user=os.environ.get("MYSQL_USER", "cap"),
+        password=os.environ["MYSQL_PASSWORD"],
+        database=os.environ.get("MYSQL_DATABASE", "cap"),
+        charset="utf8mb4",
+        autocommit=True,
+        connect_timeout=10,
+    )
+    try:
+        with db.cursor() as cur:
+            cur.execute("UPDATE videos SET public = %s WHERE id = %s AND ownerId = %s", (int(public), video_id, OWNER_ID))
+            cur.execute("SELECT public FROM videos WHERE id = %s AND ownerId = %s", (video_id, OWNER_ID))
+            row = cur.fetchone()
+    finally:
+        db.close()
+    if not row or bool(row[0]) != public:
+        raise CapError(f"could not set public={public} on video {video_id}")
 
 
 def upload_mp4(video_id: str, path: Path, meta: dict) -> None:

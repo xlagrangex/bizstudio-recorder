@@ -34,6 +34,7 @@ POLL_SECONDS = int(os.environ.get("POLL_SECONDS", "20"))
 MAX_UPTIME_SECONDS = int(os.environ.get("MAX_UPTIME_SECONDS", str(3 * 3600)))
 MAX_ATTEMPTS = int(os.environ.get("MAX_ATTEMPTS", "8"))
 DELETE_ATTENDEE_DATA = os.environ.get("DELETE_ATTENDEE_DATA", "true") == "true"
+PUBLIC_DEFAULT = os.environ.get("MEETBOT_PUBLIC_DEFAULT", "false") == "true"
 LOCAL_TZ = ZoneInfo(os.environ.get("TZ_NAMES", "Europe/Rome"))
 
 MEETING_URL = re.compile(r"^https://(meet\.google\.com/[a-z]{3,4}-[a-z]{4}-[a-z]{3,4}|teams\.(microsoft|live)\.com/\S+)$")
@@ -184,6 +185,13 @@ def discover() -> None:
         log(bot["id"], "discovered bot created outside the bridge")
 
 
+def upload(video_id: str, result: Path, thumb: Path, meta: dict) -> None:
+    # Meetings record third parties, so visibility is enforced before any bytes land.
+    cap.set_public(video_id, PUBLIC_DEFAULT)
+    cap.upload_mp4(video_id, result, meta)
+    cap.upload_thumbnail(video_id, thumb)
+
+
 def import_recording(row: sqlite3.Row) -> None:
     bot_id = row["bot_id"]
     workdir = STATE_DIR / "work" / bot_id
@@ -197,6 +205,12 @@ def import_recording(row: sqlite3.Row) -> None:
         with open(source, "wb") as out:
             for chunk in download.iter_content(chunk_size=4 * 1024 * 1024):
                 out.write(chunk)
+    if source.stat().st_size == 0:
+        # Attendee uploads an empty file when the bot left before capturing anything.
+        shutil.rmtree(workdir, ignore_errors=True)
+        update(bot_id, stage="no_recording", error="registrazione vuota")
+        log(bot_id, "Attendee recording is empty, nothing to import")
+        return
     result, thumb, meta = cap.prepare(source, workdir)
     source.unlink(missing_ok=True)
     log(bot_id, f"recording {meta['duration']:.0f}s {meta['width']}x{meta['height']} audio={meta['has_audio']}, {result.stat().st_size / 1e6:.1f} MB")
@@ -205,11 +219,10 @@ def import_recording(row: sqlite3.Row) -> None:
         video_id = cap.create_video(video_name(row["title"], row["created_at"]), meta)
         update(bot_id, video_id=video_id)
         log(bot_id, f"created Cap video {video_id}")
-    cap.upload_mp4(video_id, result, meta)
-    cap.upload_thumbnail(video_id, thumb)
+    upload(video_id, result, thumb, meta)
     update(bot_id, stage="imported", error=None)
     shutil.rmtree(workdir, ignore_errors=True)
-    log(bot_id, f"imported as {PUBLIC_URL}/s/{video_id}")
+    log(bot_id, f"imported as {PUBLIC_URL}/s/{video_id} (public={PUBLIC_DEFAULT})")
     if DELETE_ATTENDEE_DATA:
         try:
             attendee("POST", f"/bots/{bot_id}/delete_data")
@@ -233,7 +246,9 @@ def step(row: sqlite3.Row) -> None:
             attendee("POST", f"/bots/{bot_id}/leave")
             update(bot_id, stage="failed", error=f"bloccato in stato {state}, fatto uscire")
         return
-    if state == "fatal_error" and bot.get("recording_state") != "complete":
+    joined = any(event.get("type") == "joined_meeting" for event in bot.get("events") or [])
+    if not joined or (state == "fatal_error" and bot.get("recording_state") != "complete"):
+        # A bot that never got in still reports its (empty) recording as complete.
         update(bot_id, stage="failed", error=failure_reason(bot))
         return
     if state == "data_deleted" or bot.get("recording_state") not in ("complete", "in_progress"):
@@ -443,10 +458,9 @@ def import_file(path: str, title: str | None) -> None:
     workdir.mkdir(parents=True, exist_ok=True)
     result, thumb, meta = cap.prepare(Path(path), workdir)
     video_id = cap.create_video(video_name(title, time.time()), meta)
-    cap.upload_mp4(video_id, result, meta)
-    cap.upload_thumbnail(video_id, thumb)
+    upload(video_id, result, thumb, meta)
     shutil.rmtree(workdir, ignore_errors=True)
-    print(json.dumps({"video_id": video_id, "url": f"{PUBLIC_URL}/s/{video_id}", **meta}))
+    print(json.dumps({"video_id": video_id, "url": f"{PUBLIC_URL}/s/{video_id}", "public": PUBLIC_DEFAULT, **meta}))
 
 
 if __name__ == "__main__":
