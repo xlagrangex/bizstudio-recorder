@@ -268,6 +268,9 @@ fn busy_alert(cx: &mut App) {
 }
 
 pub(crate) fn schedule_startup_check(cx: &mut App) {
+    if !ENABLED {
+        return;
+    }
     let (wake, requests) = flume::bounded(1);
     cx.set_global(UpdateScheduler {
         wake,

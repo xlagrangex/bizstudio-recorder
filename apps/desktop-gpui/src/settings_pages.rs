@@ -2057,7 +2057,7 @@ impl SettingsWindow {
             self.section(
                 "Command Line",
                 Some(
-                    "Install the command-line tool for terminals, agents, scripts, and local automation.",
+                    "Install the cap command-line tool to drive Bizstudio Recorder from terminals, agents, scripts, and local automation.",
                 ),
                 None,
                 vec![self.card(true).child(body).into_any_element()],
@@ -2121,9 +2121,11 @@ impl SettingsWindow {
                             .text_size(px(12.))
                             .line_height(px(16.))
                             .text_color(theme.settings_muted())
-                            .child("The desktop app installs a local\u{a0}")
+                            .child("Bizstudio Recorder installs the\u{a0}")
                             .child(code_span("cap".into()).text_size(px(12.)))
-                            .child("\u{a0}command that points back to the bundled CLI."),
+                            .child(
+                                "\u{a0}command-line tool, which points back to the bundled CLI.",
+                            ),
                     ),
             )
             .child(
@@ -4103,12 +4105,19 @@ fn markdown_paragraphs(content: &str) -> Vec<MarkdownParagraph> {
 /// `licenseApiClient`'s fixed base (`utils/web-api.ts:54-57`).
 const LICENSE_API_BASE: &str = "https://l.cap.so/api";
 
+/// Keys are issued and checked by upstream Cap's license server, which knows
+/// nothing about this fork; off until the fork runs its own.
+const LICENSE_ACTIVATION_ENABLED: bool = false;
+
 impl SettingsWindow {
     /// `activateCommercialLicense`: key and instance id go as headers, and a
     /// 200 writes `general_settings.commercialLicense` in the exact shape
     /// license.tsx's `onActivated` writes.
     fn license_activate(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if self.pages.license_activating || self.pages.license_draft.trim().is_empty() {
+        if !LICENSE_ACTIVATION_ENABLED
+            || self.pages.license_activating
+            || self.pages.license_draft.trim().is_empty()
+        {
             return;
         }
         let Some(instance_id) = store::instance_id_or_create() else {
@@ -4215,11 +4224,11 @@ impl SettingsWindow {
             ).into_any_element()]).into_any_element(),
         ];
         if !pro {
-            content.push(if let Some(license) = license {
-                self.render_license_active(license, cx)
-            } else {
-                self.render_license_activate(cx).into_any_element()
-            });
+            if let Some(license) = license {
+                content.push(self.render_license_active(license, cx));
+            } else if LICENSE_ACTIVATION_ENABLED {
+                content.push(self.render_license_activate(cx).into_any_element());
+            }
         }
         content
     }

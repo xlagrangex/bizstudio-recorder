@@ -102,7 +102,9 @@ pub fn dispatch_cli() -> Result<(), String> {
         return Ok(());
     }
     if current_path().is_none() {
-        return Err("The --cap-cli launcher is only available inside a Cap AppImage".into());
+        return Err(
+            "The --cap-cli launcher is only available inside a Bizstudio Recorder AppImage".into(),
+        );
     }
     let executable = std::env::current_exe().map_err(|error| error.to_string())?;
     let directory = executable
@@ -112,7 +114,9 @@ pub fn dispatch_cli() -> Result<(), String> {
     let error = cli_command(&directory.join("cap-cli"), original_directory.as_deref())?
         .args(arguments)
         .exec();
-    Err(format!("Could not launch the bundled Cap CLI: {error}"))
+    Err(format!(
+        "Could not launch the bundled Bizstudio Recorder CLI: {error}"
+    ))
 }
 
 #[cfg(test)]

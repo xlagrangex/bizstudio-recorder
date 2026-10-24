@@ -135,7 +135,7 @@ impl ExportResources {
         if warnings.is_empty() {
             None
         } else {
-            warnings.push("The export may fail or your computer may become unresponsive if resources run out. Cap monitors resources during export and may stop if they become critically low.".to_string());
+            warnings.push("The export may fail or your computer may become unresponsive if resources run out. Bizstudio Recorder monitors resources during export and may stop if they become critically low.".to_string());
             Some(warnings.join("\n\n"))
         }
     }
