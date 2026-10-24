@@ -453,7 +453,7 @@ def calendar_section() -> str:
     sync_line = (f'<p class="err">Ultima lettura del calendario ({when}): {html.escape(sync_error)}</p>' if sync_error
                  else f'<p class="meta">Calendario letto alle {when}, si aggiorna ogni 5 minuti.</p>')
     switch_label, switch_cls = ("Ingresso automatico: ON", "on") if on else ("Ingresso automatico: OFF", "ghost")
-    empty = '<li class="meta">Nessun Meet nelle prossime 24 ore.</li>'
+    empty = '<li class="meta">Nessun Meet nei prossimi 7 giorni.</li>'
     account = html.escape(google.email() or "account Google")
     return f"""<h2>Riunioni dal calendario</h2>
 <div class="row"><span class="gcal">{GOOGLE_CALENDAR_ICON}<span>Collegato come <b>{account}</b></span></span>
@@ -464,10 +464,19 @@ def calendar_section() -> str:
 <p class="meta">Il bot salta le riunioni rifiutate, quelle tutto il giorno e quelle con #nobot nel titolo o nella descrizione.</p>"""
 
 
-def calendar_json() -> dict:
+def bot_fields(bot_id: str | None) -> dict:
+    found = rows("bot_id = ?", (bot_id,)) if bot_id else []
+    if not found:
+        return {"bot_stage": None, "bot_state": None, "video_id": None}
+    return {"bot_stage": found[0]["stage"], "bot_state": found[0]["attendee_state"], "video_id": found[0]["video_id"]}
+
+
+def calendar_json(take_notice: bool = False) -> dict:
     now = time.time()
     on = autojoin()
+    notice, notice_ok = take_flash() if take_notice else ("", True)
     return {
+        "notice": {"message": notice, "ok": notice_ok} if notice else None,
         "configured": google.configured(),
         "connected": google.connected(),
         "account": google.email() if google.connected() else None,
@@ -475,11 +484,26 @@ def calendar_json() -> dict:
         "synced_at": float(setting("synced_at", "0") or 0) or None,
         "sync_error": setting("sync_error") or None,
         "events": [
-            {"id": row["id"], "title": row["title"], "start": row["start"], "end": row["end"], "enabled": bool(row["enabled"]),
-             "status": row["status"], "bot_id": row["bot_id"], "error": row["error"], "label": calendar_status(row, on)}
+            {"id": row["id"], "title": row["title"], "start": row["start"], "end": row["end"], "meeting_url": row["meeting_url"],
+             "enabled": bool(row["enabled"]), "status": row["status"], "bot_id": row["bot_id"], "error": row["error"],
+             "label": calendar_status(row, on), **bot_fields(row["bot_id"])}
             for row in meetcal.upcoming(conn, db_lock, now)
         ],
     }
+
+
+def meetings_json(limit: int = 50) -> list[dict]:
+    with db_lock:
+        from_calendar = {r["bot_id"]: r["start"] for r in conn.execute(
+            "SELECT bot_id, start FROM calendar_events WHERE bot_id IS NOT NULL").fetchall()}
+    return [
+        {"bot_id": row["bot_id"], "title": row["title"], "meeting_url": row["meeting_url"], "stage": row["stage"],
+         "attendee_state": row["attendee_state"], "video_id": row["video_id"], "error": row["error"],
+         "label": status_text(row), "created_at": row["created_at"], "updated_at": row["updated_at"],
+         "source": "calendar" if row["bot_id"] in from_calendar else "manual",
+         "scheduled_start": from_calendar.get(row["bot_id"])}
+        for row in rows(limit=limit)
+    ]
 
 
 def calendar_action(action: str, fields: dict) -> tuple[str, bool, dict]:
@@ -641,7 +665,11 @@ class Handler(BaseHTTPRequestHandler):
             data = [dict(row) for row in rows(limit=50)]
             return self.send(200, json.dumps(data).encode(), "application/json")
         if route == "/api/calendar":
-            return self.send(200, json.dumps(calendar_json()).encode(), "application/json")
+            query = parse_qs(urlsplit(self.path).query)
+            data = calendar_json(take_notice=query.get("notice") == ["1"])
+            return self.send(200, json.dumps(data).encode(), "application/json")
+        if route == "/api/meetings":
+            return self.send(200, json.dumps(meetings_json()).encode(), "application/json")
         if route == "/google/connect":
             return self.google_connect()
         if route == "/google/callback":
@@ -705,7 +733,7 @@ class Handler(BaseHTTPRequestHandler):
                 result = {"ok": True, "bot_id": bot_id}
             elif route.startswith(("/calendar/", "/api/calendar/")):
                 message, ok, result = calendar_action(route.split("/calendar/", 1)[1], fields)
-            elif route.startswith("/google/"):
+            elif route == "/api/google/disconnect" or route.startswith("/google/"):
                 message, ok, result = google_action(route.split("/google/", 1)[1], fields)
             elif route.startswith("/leave/") or route.startswith("/api/leave/"):
                 bot_id = route.rsplit("/", 1)[1]

@@ -143,6 +143,9 @@ services:
       CAP_ALLOWED_SIGNUP_DOMAINS: ${CAP_ALLOWED_SIGNUP_DOMAINS:-}
       MEDIA_SERVER_URL: http://media-server:3456
       MEDIA_SERVER_WEBHOOK_URL: http://cap-web:3000
+      MEETBOT_API_URL: http://meet-bridge:8080/meetbot
+      MEETBOT_API_TOKEN: ${MEETBOT_API_TOKEN}
+      MEETBOT_OWNER_ID: cng79m7693kkajy
     ports:
       - "127.0.0.1:3020:3000"
     healthcheck:

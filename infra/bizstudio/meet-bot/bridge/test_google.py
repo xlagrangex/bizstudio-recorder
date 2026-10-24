@@ -324,6 +324,53 @@ class BridgeRoutes(unittest.TestCase):
         self.assertIn("Collegamento annullato", get("/").text)
         self.assertFalse(bridge.google.connected())
 
+    def test_json_api_for_the_dashboard(self):
+        bearer = {"Authorization": "Bearer test-token"}
+        post("/google/credentials", {"client_id": CLIENT_ID, "client_secret": CLIENT_SECRET})
+        connect_flow()
+        now = time.time()
+        with bridge.db_lock:
+            bridge.conn.execute("DELETE FROM bots")
+            bridge.conn.execute("DELETE FROM calendar_events")
+            for bot_id, stage, video, created in (("bot_old", "imported", "vid1", now - 7200), ("bot_new", "active", None, now - 60)):
+                bridge.conn.execute(
+                    "INSERT INTO bots (bot_id, meeting_url, title, stage, attendee_state, video_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (bot_id, "https://meet.google.com/abc-defg-hij", bot_id, stage, "joined_recording", video, created, created))
+            bridge.conn.commit()
+        bridge.meetcal.reconcile(bridge.conn, bridge.db_lock, [
+            bridge.meetcal.Occurrence("live", "live", now - 120, now + 1800, "In corso", "https://meet.google.com/abc-defg-hij"),
+            bridge.meetcal.Occurrence("week", "week", now + 6 * 86400, now + 6 * 86400 + 1800, "Tra sei giorni", "https://meet.google.com/abc-defg-hij"),
+        ], now)
+        with bridge.db_lock:
+            bridge.conn.execute("UPDATE calendar_events SET status = 'launched', bot_id = 'bot_new' WHERE key = 'live'")
+            bridge.conn.commit()
+
+        meetings = requests.get(BASE + "/api/meetings", headers=bearer, timeout=5).json()
+        self.assertEqual([m["bot_id"] for m in meetings], ["bot_new", "bot_old"])
+        self.assertEqual((meetings[0]["source"], meetings[1]["source"]), ("calendar", "manual"))
+        self.assertEqual(meetings[1]["video_id"], "vid1")
+        self.assertEqual(requests.get(BASE + "/api/meetings", timeout=5).status_code, 401)
+
+        calendar = requests.get(BASE + "/api/calendar", headers=bearer, timeout=5).json()
+        events = {e["id"]: e for e in calendar["events"]}
+        self.assertEqual([e["title"] for e in calendar["events"]], ["In corso", "Tra sei giorni"])
+        live = next(e for e in calendar["events"] if e["title"] == "In corso")
+        self.assertEqual((live["bot_stage"], live["bot_state"], live["meeting_url"]),
+                         ("active", "joined_recording", "https://meet.google.com/abc-defg-hij"))
+        self.assertEqual(len(events), 2)
+
+        bridge.flash("Google Calendar collegato come x@y.it.", True)
+        self.assertIsNone(requests.get(BASE + "/api/calendar", headers=bearer, timeout=5).json()["notice"])
+        notice = requests.get(BASE + "/api/calendar?notice=1", headers=bearer, timeout=5).json()["notice"]
+        self.assertEqual(notice, {"message": "Google Calendar collegato come x@y.it.", "ok": True})
+        self.assertIsNone(requests.get(BASE + "/api/calendar?notice=1", headers=bearer, timeout=5).json()["notice"])
+
+        self.assertEqual(requests.post(BASE + "/api/google/credentials", json={}, headers=bearer, timeout=5).status_code, 404)
+        done = requests.post(BASE + "/api/google/disconnect", json={}, headers=bearer, timeout=5)
+        self.assertEqual(done.json(), {"ok": True, "revoked": True})
+        self.assertFalse(bridge.google.connected())
+        self.assertTrue(bridge.google.configured())
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

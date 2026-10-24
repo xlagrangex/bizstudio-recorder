@@ -205,6 +205,22 @@ function createServerEnv() {
 					"Base URL for media server webhooks (use host.docker.internal for Docker setups)",
 				),
 
+			/// Meet bot bridge (infra/bizstudio/meet-bot)
+			MEETBOT_API_URL: z
+				.string()
+				.optional()
+				.describe(
+					"Bridge base URL reachable from the server, eg. http://meet-bridge:8080/meetbot",
+				),
+			MEETBOT_API_TOKEN: z
+				.string()
+				.optional()
+				.describe("Bearer token of the bridge JSON API"),
+			MEETBOT_OWNER_ID: z
+				.string()
+				.optional()
+				.describe("User id allowed to use the Meet Bot page"),
+
 			/// Ignore
 			NODE_ENV: z.string(),
 		},

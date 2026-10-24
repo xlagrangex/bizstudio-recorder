@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 
 MEET_LINK = re.compile(r"https?://meet\.google\.com/([a-z]{3,4}-[a-z]{4}-[a-z]{3,4})(?![a-z-])", re.I)
 NOBOT = "#nobot"
-HORIZON = 24 * 3600
+HORIZON = 7 * 86400
 # Events that already started are still fetched, so a bridge restart mid-meeting can join late.
 LOOKBACK = 3600
 LEAD_SECONDS = 60
@@ -179,7 +179,7 @@ def run_due(conn: sqlite3.Connection, lock: threading.Lock, now: float, autojoin
         log(bot_id, f"auto-joined from calendar event {row['id']}")
 
 
-def upcoming(conn: sqlite3.Connection, lock: threading.Lock, now: float, limit: int = 30) -> list[sqlite3.Row]:
+def upcoming(conn: sqlite3.Connection, lock: threading.Lock, now: float, limit: int = 200) -> list[sqlite3.Row]:
     with lock:
         return conn.execute(
             "SELECT * FROM calendar_events WHERE status != 'gone' AND end > ? AND start < ? ORDER BY start LIMIT ?",
