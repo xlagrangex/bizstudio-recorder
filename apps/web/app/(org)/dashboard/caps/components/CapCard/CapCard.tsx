@@ -40,6 +40,7 @@ import { type PropsWithChildren, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmationDialog } from "@/app/(org)/dashboard/_components/ConfirmationDialog";
 import { useDashboardContext } from "@/app/(org)/dashboard/Contexts";
+import { DownloadDialog } from "@/app/s/[videoId]/_components/DownloadDialog";
 import { useUploadProgress } from "@/app/s/[videoId]/_components/ProgressCircle";
 import { Tooltip } from "@/components/Tooltip";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -171,6 +172,7 @@ export const CapCard = ({
 
 	const [isSharingDialogOpen, setIsSharingDialogOpen] = useState(false);
 	const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+	const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const [passwordProtected, setPasswordProtected] = useState(
 		cap.hasPassword || false,
@@ -422,6 +424,13 @@ export const CapCard = ({
 				capId={cap.id}
 				onClose={() => setIsSettingsDialogOpen(false)}
 			/>
+			{isOwner && (
+				<DownloadDialog
+					videoId={cap.id}
+					open={isDownloadDialogOpen}
+					onOpenChange={setIsDownloadDialogOpen}
+				/>
+			)}
 			<PasswordDialog
 				isOpen={isPasswordDialogOpen}
 				onClose={() => setIsPasswordDialogOpen(false)}
@@ -595,6 +604,20 @@ export const CapCard = ({
 								<FontAwesomeIcon icon={faDownload} />
 								<p className="text-sm text-gray-12">Download</p>
 							</DropdownMenuItem>
+							{isOwner && (
+								<DropdownMenuItem
+									onClick={(e) => {
+										e.stopPropagation();
+										setIsDownloadDialogOpen(true);
+									}}
+									className="flex gap-2 items-center rounded-lg"
+								>
+									<FontAwesomeIcon icon={faDownload} />
+									<p className="text-sm text-gray-12">
+										Other formats and sources...
+									</p>
+								</DropdownMenuItem>
+							)}
 							<DropdownMenuItem
 								onClick={(e) => {
 									e.stopPropagation();

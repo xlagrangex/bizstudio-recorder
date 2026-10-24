@@ -71,6 +71,7 @@ import { usePublicEnv } from "@/utils/public-env";
 import { navigateWithTransition } from "@/utils/view-transition";
 import type { SharePageBranding, VideoData } from "../types";
 import { DashboardBackLink } from "./DashboardBackLink";
+import { DownloadDialog } from "./DownloadDialog";
 import { describeShareAudience } from "./share-audience";
 import { useVideoDownload } from "./use-video-download";
 import { fromNow } from "./utils/from-now";
@@ -221,6 +222,7 @@ export const ShareHeader = ({
 		queryFn: skipToken,
 	});
 	const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+	const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
 	const [moveDialogMounted, setMoveDialogMounted] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
 	const [displayTitle, setDisplayTitle] = useState(data.name);
@@ -893,6 +895,11 @@ export const ShareHeader = ({
 			)}
 			{isOwner && (
 				<>
+					<DownloadDialog
+						videoId={data.id}
+						open={isDownloadDialogOpen}
+						onOpenChange={setIsDownloadDialogOpen}
+					/>
 					{moveDialogMounted && (
 						<MoveItemsDialog
 							open={moveDialogOpen}
@@ -1153,6 +1160,15 @@ export const ShareHeader = ({
 												/>
 												View analytics
 											</Button>
+											<Button
+												variant="gray"
+												size="xs"
+												className={ACTION_BAR_BUTTON_CLASS}
+												onClick={() => setIsDownloadDialogOpen(true)}
+											>
+												<Download className="size-3.5 text-gray-12" />
+												Download
+											</Button>
 											{isOpenInStudioAvailable() && (
 												<Tooltip content={OPEN_IN_STUDIO_TOOLTIP}>
 													<Button
@@ -1331,6 +1347,15 @@ export const ShareHeader = ({
 																	</p>
 																</DropdownMenuItem>
 															)}
+															<DropdownMenuItem
+																onClick={() => setIsDownloadDialogOpen(true)}
+																className="flex items-center gap-2 rounded-lg"
+															>
+																<Download className="size-3.5" />
+																<p className="text-sm text-gray-12">
+																	Other formats and sources...
+																</p>
+															</DropdownMenuItem>
 														</>
 													)}
 													<DropdownMenuSeparator />
