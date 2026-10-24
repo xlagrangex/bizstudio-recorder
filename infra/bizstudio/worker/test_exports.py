@@ -90,7 +90,7 @@ class RenderTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp) / "in.mp4"
             subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=1920x1080:rate=30:duration=2",
-                            "-f", "lavfi", "-i", "sine=duration=2", "-c:v", "libx264", "-c:a", "aac", "-shortest", str(source)], check=True)
+                            "-f", "lavfi", "-i", "sine=duration=2", "-c:v", "libx264", "-threads", "2", "-c:a", "aac", "-shortest", str(source)], check=True)
             client = FakeS3()
             client.put("owner1/vid1/result.mp4", source.read_bytes(), etag="e1")
             for export_format in exports.FORMATS:

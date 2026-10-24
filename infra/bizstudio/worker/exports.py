@@ -21,6 +21,8 @@ QUEUE_PREFIX = "export-queue/"
 ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 GIF_SECONDS = 30
 TIMEOUT = 4 * 3600
+# The worker shares a 1 GB container with transcription; unbounded x264/vpx threads blow past it at 1080p.
+THREADS = ["-threads", "2"]
 
 
 def scale_to(height: int) -> str:
@@ -67,8 +69,8 @@ def ffmpeg_args(export_format: str, source: Path, target: Path) -> list[str]:
             "[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5"
         )
         return ["ffmpeg", "-y", "-v", "error", "-t", f"{length}", "-i", str(source),
-                "-an", "-filter_complex", graph, "-loop", "0", str(target)]
-    return ["ffmpeg", "-y", "-v", "error", "-i", str(source), *spec["args"], str(target)]
+                "-an", "-filter_complex", graph, *THREADS, "-loop", "0", str(target)]
+    return ["ffmpeg", "-y", "-v", "error", "-i", str(source), *spec["args"], *THREADS, str(target)]
 
 
 def source_etag(client, bucket: str, key: str) -> str:
