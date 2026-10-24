@@ -6,18 +6,27 @@ name: bizrec
 x-secrets: &secrets
   env_file: ${BIZREC_DATA:-/root/bizstudio-recorder}/secrets.env
 
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
 services:
   rclone:
-    <<: *secrets
+    <<: [*secrets, *logging]
     image: rclone/rclone:1.74
     restart: unless-stopped
     # Serving the Storage Share over S3 lags ~5s on read-after-write, which is why
     # it only backs MinIO's cold tier and never receives Cap traffic directly.
     command: >
       serve s3 hetzner:BizStudio/Recorder --addr :9200
-      --auth-key ${TIER_S3_KEY},${TIER_S3_SECRET}
       --vfs-cache-mode writes --vfs-cache-max-size 5G --dir-cache-time 5s
       --cache-dir /cache
+    environment:
+      # Array flags read from env are parsed as CSV: the quotes keep key,secret one entry.
+      RCLONE_AUTH_KEY: '"${TIER_S3_KEY},${TIER_S3_SECRET}"'
     volumes:
       - /root/.config/rclone:/config/rclone:ro
       - ${BIZREC_DATA:-/root/bizstudio-recorder}/rclone-cache:/cache
@@ -72,14 +81,19 @@ services:
       context: ../../apps/media-server
       dockerfile: Dockerfile.standalone
     restart: unless-stopped
+    <<: *logging
+    mem_limit: 1g
+    cpus: 2
     environment:
       PORT: 3456
       MEDIA_SERVER_WEBHOOK_SECRET: ${MEDIA_SERVER_WEBHOOK_SECRET}
 
   worker:
-    <<: *secrets
+    <<: [*secrets, *logging]
     build: ./worker
     restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.5
     depends_on:
       mysql:
         condition: service_healthy
@@ -101,6 +115,9 @@ services:
   cap-web:
     image: ghcr.io/xlagrangex/cap-web:latest
     restart: unless-stopped
+    <<: *logging
+    mem_limit: 1g
+    cpus: 1.5
     depends_on:
       mysql:
         condition: service_healthy
