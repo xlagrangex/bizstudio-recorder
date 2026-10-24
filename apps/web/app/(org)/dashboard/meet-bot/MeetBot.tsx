@@ -163,12 +163,15 @@ function CalendarHeader({ calendar }: { calendar: MeetBotCalendar }) {
 
 			{calendar.connected ? (
 				<div className="flex flex-col gap-4 pt-5 border-t border-gray-3 sm:flex-row sm:items-center sm:justify-between">
-					<div className="flex gap-3 items-center min-w-0">
+					<div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 items-center min-w-0 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
 						<GoogleCalendarIcon className="size-8 shrink-0" />
 						<div className="min-w-0">
-							<p className="text-sm text-gray-12">
-								Collegato come{" "}
-								<span className="font-medium [overflow-wrap:anywhere]">
+							<p className="flex flex-col text-sm text-gray-12 sm:flex-row sm:gap-1">
+								<span className="shrink-0">Collegato come</span>
+								<span
+									className="font-medium truncate"
+									title={calendar.account ?? undefined}
+								>
 									{calendar.account ?? "account Google"}
 								</span>
 							</p>
@@ -188,7 +191,7 @@ function CalendarHeader({ calendar }: { calendar: MeetBotCalendar }) {
 						<Button
 							variant="transparent"
 							size="xs"
-							className="px-2 ml-auto sm:ml-2"
+							className="col-start-2 justify-self-start px-2 mt-1 -ml-2 sm:col-start-3 sm:mt-0 sm:ml-2"
 							disabled={pending}
 							onClick={() => {
 								if (
