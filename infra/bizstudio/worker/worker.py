@@ -3,6 +3,7 @@ import os
 import re
 import signal
 import sqlite3
+import threading
 import time
 import traceback
 from datetime import datetime, timezone
@@ -15,6 +16,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 import brain
+import exports
 from transcribe import NoAudio, enrich, probe_duration, run, to_vtt, transcribe
 
 STATE_DIR = Path(os.environ.get("STATE_DIR", "/state"))
@@ -419,6 +421,9 @@ def main() -> None:
     if not os.environ.get("OPENROUTER_API_KEY"):
         log(None, "OPENROUTER_API_KEY missing; idling")
     conn = state_db()
+    threading.Thread(
+        target=exports.loop, args=(s3, BUCKET, log, lambda: running), name="exports", daemon=True
+    ).start()
     log(None, f"worker started (poll={POLL_SECONDS}s, brain={'on' if BRAIN_ENABLED else 'off'} branch={brain.BRANCH})")
     while running:
         try:
