@@ -18,6 +18,7 @@ use crate::auth::{self, AuthApiError};
 #[cfg(test)]
 mod multipart_tests;
 pub(crate) mod queue;
+mod sources;
 #[cfg(test)]
 mod verify_tests;
 
@@ -1347,6 +1348,7 @@ async fn upload_exported_video_inner(
             {
                 return Err(format!("thumbnail upload failed: {error}"));
             }
+            sources::spawn_sources_upload(project_path.clone(), s3_config.id.clone());
 
             check_export_cancelled(&cancel).map_err(|error| error.to_string())?;
             if !defer_completion {
@@ -2288,6 +2290,15 @@ async fn presigned_put_bytes_inner(
     bytes: Vec<u8>,
     cancel: Option<&AtomicBool>,
 ) -> Result<(), AuthApiError> {
+    let target = signed_put_target(video_id, subpath, cancel).await?;
+    upload_signed_bytes_inner(target, subpath, bytes, cancel).await
+}
+
+async fn signed_put_target(
+    video_id: &str,
+    subpath: &str,
+    cancel: Option<&AtomicBool>,
+) -> Result<SignedUploadTarget, AuthApiError> {
     #[derive(Deserialize)]
     #[serde(rename_all = "camelCase")]
     struct Response {
@@ -2313,12 +2324,11 @@ async fn presigned_put_bytes_inner(
             format!("api/upload_signed/{}", status.as_u16()),
         ));
     }
-    let target = response
+    Ok(response
         .json::<Response>()
         .await
         .map_err(|error| AuthApiError::Other(format!("api/upload_signed/response: {error}")))?
-        .presigned_put_data;
-    upload_signed_bytes_inner(target, subpath, bytes, cancel).await
+        .presigned_put_data)
 }
 
 async fn upload_signed_bytes_inner(
@@ -2389,6 +2399,10 @@ fn upload_content_type(subpath: &str) -> &'static str {
         "application/json"
     } else if subpath.ends_with(".mp4") || subpath.ends_with(".m4s") {
         "video/mp4"
+    } else if subpath.ends_with(".m4a") {
+        "audio/mp4"
+    } else if subpath.ends_with(".ogg") {
+        "audio/ogg"
     } else if subpath.ends_with(".png") {
         "image/png"
     } else if subpath.ends_with(".jpg") || subpath.ends_with(".jpeg") {

@@ -323,6 +323,12 @@ impl UploadRequestContext {
         self.credentials_from(&server_url(), &store::store_section("auth"))
     }
 
+    /// The context the calling task runs under, so work it hands to a
+    /// detached task keeps talking to the same server as the same user.
+    pub(crate) fn current() -> Option<Self> {
+        UPLOAD_REQUEST.try_with(Clone::clone).ok()
+    }
+
     pub(crate) async fn run<F: std::future::Future>(self, future: F) -> F::Output {
         UPLOAD_REQUEST.scope(self, future).await
     }
