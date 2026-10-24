@@ -27,6 +27,12 @@ rsync -a infra/bizstudio/<dir>/ vincenzoserver:/root/bizstudio-recorder/src/infr
 
 Limiti: media-server, cap-web e worker hanno `mem_limit: 1g`. Se un container viene ucciso per OOM, `docker inspect <container> --format '{{.State.OOMKilled}}'` lo conferma.
 
+## Meet bot dal calendario
+
+meet-bridge legge ogni 5 minuti l'indirizzo segreto iCal di Google Calendar (incollato su /meetbot/, salvato in `/root/bizstudio-recorder/meet/bridge/ical_url` con permessi 600: è un segreto, non stamparlo) e manda il bot un minuto prima di ogni Meet delle prossime 24 ore. Salta riunioni rifiutate, tutto il giorno, annullate e con `#nobot` nel titolo o nella descrizione. Un bot per occorrenza; se c'è già un bot in riunione riprova fino a 30 minuti dopo l'inizio. Lo scheduling è nel bridge: Attendee ha `join_at` ma richiede il suo `run_scheduler`, che qui non gira.
+
+Stato: `docker exec bizrec-meet-meet-bridge-1 python -c "import sqlite3; [print(tuple(r)) for r in sqlite3.connect('/state/bridge.db').execute('SELECT title, datetime(start, \"unixepoch\"), enabled, status, bot_id, error FROM calendar_events ORDER BY start')]"`. Test: `docker exec -w /app bizrec-meet-meet-bridge-1 python test_calendar.py`.
+
 ## Log
 
 ```sh

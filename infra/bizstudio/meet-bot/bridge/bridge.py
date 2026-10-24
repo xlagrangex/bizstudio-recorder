@@ -19,6 +19,7 @@ from zoneinfo import ZoneInfo
 import requests
 
 import cap
+import meetcal
 
 STATE_DIR = Path(os.environ.get("STATE_DIR", "/state"))
 ATTENDEE_URL = os.environ.get("ATTENDEE_URL", "http://attendee-app:8000").rstrip("/")
@@ -36,6 +37,11 @@ MAX_ATTEMPTS = int(os.environ.get("MAX_ATTEMPTS", "8"))
 DELETE_ATTENDEE_DATA = os.environ.get("DELETE_ATTENDEE_DATA", "true") == "true"
 PUBLIC_DEFAULT = os.environ.get("MEETBOT_PUBLIC_DEFAULT", "false") == "true"
 LOCAL_TZ = ZoneInfo(os.environ.get("TZ_NAMES", "Europe/Rome"))
+CALENDAR_SYNC_SECONDS = int(os.environ.get("CALENDAR_SYNC_SECONDS", "300"))
+CALENDAR_TICK_SECONDS = int(os.environ.get("CALENDAR_TICK_SECONDS", "20"))
+CALENDAR_ALLOW_HTTP = os.environ.get("CALENDAR_ALLOW_HTTP", "false") == "true"
+ICAL_FILE = STATE_DIR / "ical_url"
+ICS_MAX_BYTES = 20 * 1024 * 1024
 
 MEETING_URL = re.compile(r"^https://(meet\.google\.com/[a-z]{3,4}-[a-z]{4}-[a-z]{3,4}|teams\.(microsoft|live)\.com/\S+)$")
 ATTENDEE_DONE = {"ended", "fatal_error", "data_deleted"}
@@ -91,6 +97,7 @@ def connect() -> sqlite3.Connection:
         )"""
     )
     conn.commit()
+    meetcal.init_db(conn)
     return conn
 
 
@@ -136,7 +143,7 @@ def launch(meeting_url: str, title: str | None) -> str:
     if not MEETING_URL.match(meeting_url):
         raise ValueError("Link non valido: incolla il link del Meet (https://meet.google.com/abc-defg-hij).")
     if active_bots():
-        raise ValueError("C'è già un bot in una riunione: il server ne regge uno alla volta. Fallo uscire prima.")
+        raise meetcal.Busy("C'è già un bot in una riunione: il server ne regge uno alla volta. Fallo uscire prima.")
     payload = {
         "meeting_url": meeting_url,
         "bot_name": BOT_NAME,
@@ -290,10 +297,218 @@ def poll_loop() -> None:
             time.sleep(1)
 
 
+sync_lock = threading.Lock()
+
+
+def setting(key: str, default: str = "") -> str:
+    with db_lock:
+        row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else default
+
+
+def set_setting(key: str, value: str) -> None:
+    with db_lock:
+        conn.execute("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", (key, value))
+        conn.commit()
+
+
+def autojoin() -> bool:
+    return setting("autojoin", "1") == "1"
+
+
+def ical_url() -> str:
+    try:
+        return ICAL_FILE.read_text().strip()
+    except FileNotFoundError:
+        return ""
+
+
+def save_ical_url(value: str) -> None:
+    value = value.strip()
+    if value.startswith("webcal://"):
+        value = "https://" + value[len("webcal://"):]
+    parts = urlsplit(value)
+    schemes = ("https", "http") if CALENDAR_ALLOW_HTTP else ("https",)
+    if parts.scheme not in schemes or not parts.netloc or len(value) > 2000:
+        raise ValueError("Indirizzo non valido: incolla l'indirizzo segreto in formato iCal (https://calendar.google.com/…/basic.ics).")
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    fd = os.open(ICAL_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as out:
+        out.write(value)
+    os.chmod(ICAL_FILE, 0o600)
+    set_setting("sync_error", "")
+    set_setting("synced_at", "0")
+
+
+def forget_calendar() -> None:
+    ICAL_FILE.unlink(missing_ok=True)
+    with db_lock:
+        conn.execute("DELETE FROM calendar_events WHERE status IN ('pending', 'gone', 'missed')")
+        conn.execute("DELETE FROM settings WHERE key IN ('sync_error', 'synced_at')")
+        conn.commit()
+
+
+def fetch_ics(url: str) -> bytes:
+    # The URL is the secret: errors are reduced to type and status so it never reaches logs or the page.
+    try:
+        with requests.get(url, stream=True, timeout=30) as response:
+            if response.status_code != 200:
+                raise RuntimeError(f"Google Calendar ha risposto HTTP {response.status_code}")
+            body = bytearray()
+            for chunk in response.iter_content(chunk_size=256 * 1024):
+                body.extend(chunk)
+                if len(body) > ICS_MAX_BYTES:
+                    raise RuntimeError("calendario troppo grande")
+            return bytes(body)
+    except requests.RequestException as error:
+        raise RuntimeError(f"calendario non raggiungibile ({type(error).__name__})") from None
+
+
+def calendar_sync() -> str | None:
+    """Returns an error message, or None when the feed was read and applied."""
+    url = ical_url()
+    if not url:
+        return None
+    with sync_lock:
+        now = time.time()
+        try:
+            occurrences = meetcal.parse(fetch_ics(url), now, owners=[OWNER_EMAIL], local_tz=LOCAL_TZ)
+        except Exception as error:
+            message = str(error).replace(url, "<ical>")[:200] if isinstance(error, RuntimeError) else f"calendario illeggibile ({type(error).__name__})"
+            set_setting("sync_error", message)
+            set_setting("synced_at", str(now))
+            log(None, f"calendar sync failed: {message}")
+            return message
+        meetcal.reconcile(conn, db_lock, occurrences, now)
+        set_setting("sync_error", "")
+        set_setting("synced_at", str(now))
+        return None
+
+
+def launch_for_calendar(meeting_url: str, title: str) -> str:
+    for row in active_bots():
+        if row["meeting_url"] == meeting_url:
+            return row["bot_id"]
+    return launch(meeting_url, title)
+
+
+def calendar_loop() -> None:
+    while running:
+        try:
+            if ical_url():
+                if time.time() - float(setting("synced_at", "0") or 0) >= CALENDAR_SYNC_SECONDS:
+                    calendar_sync()
+                meetcal.run_due(conn, db_lock, time.time(), autojoin(), launch_for_calendar, log)
+        except Exception:
+            traceback.print_exc()
+        for _ in range(CALENDAR_TICK_SECONDS):
+            if not running:
+                return
+            time.sleep(1)
+
+
 def status_text(row: sqlite3.Row) -> str:
     if row["stage"] == "active":
         return STATE_LABELS.get(row["attendee_state"] or "", row["attendee_state"] or "in avvio")
     return STAGE_LABELS.get(row["stage"], row["stage"])
+
+
+def calendar_status(row: sqlite3.Row, on: bool) -> str:
+    if row["status"] == "launched":
+        bot = rows("bot_id = ?", (row["bot_id"],)) if row["bot_id"] else []
+        return f"bot inviato · {status_text(bot[0])}" if bot else "bot inviato"
+    if row["status"] == "missed":
+        return "saltato"
+    if row["status"] == "failed":
+        return "non è riuscito a mandare il bot"
+    if not on:
+        return "ingresso automatico spento"
+    if not row["enabled"]:
+        return "il bot non entra"
+    return "il bot entra da solo un minuto prima"
+
+
+def calendar_section() -> str:
+    now = time.time()
+    on = autojoin()
+    configured = bool(ical_url())
+    items = []
+    for row in meetcal.upcoming(conn, db_lock, now):
+        toggle = ""
+        if row["status"] == "pending":
+            label, cls = ("ON", "on") if row["enabled"] else ("OFF", "ghost")
+            toggle = (f'<form method="post" action="{BASE_PATH}/calendar/toggle/{row["id"]}">'
+                      f'<button class="{cls}" title="Bot per questa riunione">{label}</button></form>')
+        error = f'<div class="err">{html.escape(row["error"])}</div>' if row["error"] else ""
+        items.append(
+            f'<li><div><b>{html.escape(row["title"] or "")}</b>'
+            f'<div class="meta">{meetcal.day_label(row["start"], now, LOCAL_TZ)} · {html.escape(calendar_status(row, on))}</div>{error}</div>{toggle}</li>'
+        )
+    if configured:
+        synced = float(setting("synced_at", "0") or 0)
+        sync_error = setting("sync_error")
+        when = datetime.fromtimestamp(synced, LOCAL_TZ).strftime("%H:%M") if synced else "mai"
+        sync_line = (f'<p class="err">Ultima lettura del calendario ({when}): {html.escape(sync_error)}</p>' if sync_error
+                     else f'<p class="meta">Calendario letto alle {when}, si aggiorna ogni 5 minuti.</p>')
+        empty = '<li class="meta">Nessun Meet nelle prossime 24 ore.</li>'
+        switch_label, switch_cls = ("Ingresso automatico: ON", "on") if on else ("Ingresso automatico: OFF", "ghost")
+        body = f"""<form method="post" action="{BASE_PATH}/calendar/autojoin"><button class="{switch_cls}">{switch_label}</button></form>
+{sync_line}<ul>{"".join(items) or empty}</ul>"""
+        settings_form = f"""<p class="meta">Indirizzo iCal salvato: https://calendar.google.com/••••••••</p>
+<form method="post" action="{BASE_PATH}/calendar/settings"><input name="ical_url" type="password" required autocomplete="off" placeholder="Nuovo indirizzo segreto in formato iCal"><button>Sostituisci</button></form>
+<form method="post" action="{BASE_PATH}/calendar/sync"><button class="ghost">Rileggi ora</button></form>
+<form method="post" action="{BASE_PATH}/calendar/forget"><button class="ghost">Scollega il calendario</button></form>"""
+    else:
+        body = '<p class="meta">Collega Google Calendar e il bot entra da solo in ogni Meet in agenda.</p>'
+        settings_form = f"""<form method="post" action="{BASE_PATH}/calendar/settings"><input name="ical_url" type="password" required autocomplete="off" placeholder="Indirizzo segreto in formato iCal">
+<button>Collega</button></form>
+<p class="meta">Google Calendar → Impostazioni → il tuo calendario → Integra calendario → Indirizzo segreto in formato iCal.</p>"""
+    return f"""<h2>Riunioni dal calendario</h2>{body}
+<details{"" if configured else " open"}><summary>Collegamento a Google Calendar</summary>{settings_form}
+<p class="meta">Il bot salta le riunioni rifiutate, quelle tutto il giorno e quelle con #nobot nel titolo o nella descrizione.</p></details>"""
+
+
+def calendar_json() -> dict:
+    now = time.time()
+    on = autojoin()
+    return {
+        "configured": bool(ical_url()),
+        "autojoin": on,
+        "synced_at": float(setting("synced_at", "0") or 0) or None,
+        "sync_error": setting("sync_error") or None,
+        "events": [
+            {"id": row["id"], "title": row["title"], "start": row["start"], "end": row["end"], "enabled": bool(row["enabled"]),
+             "status": row["status"], "bot_id": row["bot_id"], "error": row["error"], "label": calendar_status(row, on)}
+            for row in meetcal.upcoming(conn, db_lock, now)
+        ],
+    }
+
+
+def calendar_action(action: str, fields: dict) -> tuple[str, bool, dict]:
+    if action == "settings":
+        save_ical_url(fields.get("ical_url") or "")
+        error = calendar_sync()
+        if error:
+            return f"Indirizzo salvato, ma il calendario non si legge: {error}", False, {"ok": False, "error": error}
+        return "Calendario collegato.", True, {"ok": True}
+    if action == "forget":
+        forget_calendar()
+        return "Calendario scollegato.", True, {"ok": True}
+    if action == "sync":
+        error = calendar_sync()
+        return (error, False, {"ok": False, "error": error}) if error else ("Calendario riletto.", True, {"ok": True})
+    if action == "autojoin":
+        value = fields.get("enabled")
+        enabled = (str(value).lower() in ("1", "true", "on")) if value is not None else not autojoin()
+        set_setting("autojoin", "1" if enabled else "0")
+        message = "Ingresso automatico acceso." if enabled else "Ingresso automatico spento: nessun bot partirà dal calendario."
+        return message, True, {"ok": True, "autojoin": enabled}
+    if action.startswith("toggle/"):
+        enabled = meetcal.toggle(conn, db_lock, action.split("/", 1)[1])
+        if enabled is None:
+            raise ValueError("Riunione non trovata.")
+        return ("Il bot entrerà in questa riunione." if enabled else "Il bot non entrerà in questa riunione."), True, {"ok": True, "enabled": enabled}
+    raise ValueError("Azione sconosciuta.")
 
 
 def render(message: str = "", ok: bool = True) -> bytes:
@@ -317,13 +532,16 @@ input,button{{font:inherit;padding:12px;border-radius:10px;border:1px solid #ccc
 button{{background:#111;color:#fff;border:0;cursor:pointer}} .ghost{{background:#eee;color:#111;width:auto;padding:8px 12px}}
 ul{{list-style:none;padding:0}} li{{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #e5e5e5}}
 li b{{word-break:break-all}} .meta{{color:#666;font-size:14px}} .err{{color:#b00020;font-size:14px}} .ok{{color:#0a7a32}}
-@media (prefers-color-scheme:dark){{body{{background:#111;color:#eee}} li{{border-color:#333}} .meta{{color:#aaa}} input{{background:#222;color:#eee;border-color:#444}} button{{background:#eee;color:#111}} .ghost{{background:#333;color:#eee}}}}</style>
+h2{{font-size:20px;margin:28px 0 4px}} .on{{background:#0a7a32;color:#fff;width:auto;padding:8px 12px}} summary{{cursor:pointer;color:#666;margin:12px 0}}
+@media (prefers-color-scheme:dark){{body{{background:#111;color:#eee}} li{{border-color:#333}} .meta{{color:#aaa}} input{{background:#222;color:#eee;border-color:#444}} button{{background:#eee;color:#111}} .ghost{{background:#333;color:#eee}} .on{{background:#1f9d55;color:#fff}} summary{{color:#aaa}}}}</style>
 </head><body><h1>Registra un Meet</h1>{flash}
 <form method="post" action="{BASE_PATH}/join">
 <input name="meeting_url" type="url" required placeholder="https://meet.google.com/abc-defg-hij" autocomplete="off">
 <input name="title" placeholder="Titolo (facoltativo)" maxlength="120">
 <button>Manda il bot</button></form>
 <p class="meta">Il bot entra come ospite: ammettilo dal Meet quando chiede di partecipare. A fine riunione il video compare in Bizstudio Recorder.</p>
+{calendar_section()}
+<h2>Ultimi bot</h2>
 <ul>{"".join(items) or '<li class="meta">Nessun bot ancora.</li>'}</ul></body></html>"""
     return page.encode()
 
@@ -406,6 +624,8 @@ class Handler(BaseHTTPRequestHandler):
         if route == "/api/bots":
             data = [dict(row) for row in rows(limit=50)]
             return self.send(200, json.dumps(data).encode(), "application/json")
+        if route == "/api/calendar":
+            return self.send(200, json.dumps(calendar_json()).encode(), "application/json")
         self.send(404, b"not found", "text/plain")
 
     def do_POST(self):
@@ -428,6 +648,8 @@ class Handler(BaseHTTPRequestHandler):
                 bot_id = launch(fields.get("meeting_url") or "", title)
                 message, ok = "Bot inviato: tra poco chiede di entrare nel Meet, ammettilo.", True
                 result = {"ok": True, "bot_id": bot_id}
+            elif route.startswith(("/calendar/", "/api/calendar/")):
+                message, ok, result = calendar_action(route.split("/calendar/", 1)[1], fields)
             elif route.startswith("/leave/") or route.startswith("/api/leave/"):
                 bot_id = route.rsplit("/", 1)[1]
                 if not rows("bot_id = ?", (bot_id,)):
@@ -472,6 +694,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     threading.Thread(target=poll_loop, daemon=True).start()
+    threading.Thread(target=calendar_loop, daemon=True).start()
     log(None, f"meet-bridge listening on :8080{BASE_PATH} (poll={POLL_SECONDS}s, max uptime={MAX_UPTIME_SECONDS}s)")
     server.serve_forever()
     log(None, "meet-bridge stopped")
