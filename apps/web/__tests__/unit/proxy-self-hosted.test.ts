@@ -78,4 +78,29 @@ describe("self-hosted proxy routes", () => {
 
 	it("does not treat a share link as an asset", () =>
 		expectServed("/s/video123"));
+
+	it("canonicalises a trailing-dot Origin for Server Actions", async () => {
+		const response = await proxy(
+			new NextRequest("https://cap.example.com/dashboard/caps", {
+				method: "POST",
+				headers: { origin: "https://cap.example.com." },
+			}),
+		);
+		expect(response.headers.get("x-middleware-override-headers")).toContain(
+			"origin",
+		);
+		expect(response.headers.get("x-middleware-request-origin")).toBe(
+			"https://cap.example.com",
+		);
+	});
+
+	it("leaves foreign Origins untouched for Next's CSRF check", async () => {
+		const response = await proxy(
+			new NextRequest("https://cap.example.com/dashboard/caps", {
+				method: "POST",
+				headers: { origin: "https://evil.example." },
+			}),
+		);
+		expect(response.headers.get("x-middleware-request-origin")).toBeNull();
+	});
 });

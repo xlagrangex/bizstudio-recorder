@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mockDb = vi.hoisted(() => vi.fn());
 const mockTranscribeVideo = vi.hoisted(() => vi.fn());
 const mockIsAiGenerationEnabledForUser = vi.hoisted(() => vi.fn());
+const env = vi.hoisted(() => ({
+	build: { NEXT_PUBLIC_IS_CAP: "true" as string | undefined },
+	server: { ASSEMBLY_API_KEY: undefined as string | undefined },
+}));
 
 const schemaMocks = vi.hoisted(() => ({
 	users: {
@@ -18,6 +22,10 @@ const schemaMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@cap/database", () => ({ db: mockDb }));
+vi.mock("@cap/env", () => ({
+	buildEnv: env.build,
+	serverEnv: () => env.server,
+}));
 vi.mock("@cap/database/schema", () => schemaMocks);
 vi.mock("drizzle-orm", () => ({
 	eq: vi.fn((field, value) => ({ field, value })),
@@ -52,6 +60,8 @@ function makeSelectChain(rows: unknown[]) {
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	env.build.NEXT_PUBLIC_IS_CAP = "true";
+	env.server.ASSEMBLY_API_KEY = undefined;
 	mockIsAiGenerationEnabledForUser.mockReturnValue(true);
 	mockTranscribeVideo.mockResolvedValue({
 		success: true,
@@ -98,6 +108,38 @@ describe("queueVideoTranscription", () => {
 			success: true,
 			message: "Screenshot does not need transcription",
 		});
+	});
+
+	it("skips cleanly on self-host when built-in transcription is not configured", async () => {
+		env.build.NEXT_PUBLIC_IS_CAP = undefined;
+
+		const result = await queueVideoTranscription("video-1" as Video.VideoId);
+
+		expect(mockDb).not.toHaveBeenCalled();
+		expect(mockTranscribeVideo).not.toHaveBeenCalled();
+		expect(result).toEqual({
+			success: true,
+			message: "Built-in transcription is not configured",
+		});
+	});
+
+	it("queues on self-host when built-in transcription is configured", async () => {
+		env.build.NEXT_PUBLIC_IS_CAP = undefined;
+		env.server.ASSEMBLY_API_KEY = "configured";
+		mockDb.mockReturnValue(
+			makeSelectChain([
+				{
+					id: "user-1",
+					isScreenshot: false,
+					stripeSubscriptionStatus: null,
+					thirdPartyStripeSubscriptionId: null,
+				},
+			]),
+		);
+
+		await queueVideoTranscription("video-1" as Video.VideoId);
+
+		expect(mockTranscribeVideo).toHaveBeenCalledWith("video-1", "user-1", true);
 	});
 
 	it("does not queue transcription when the video owner is missing", async () => {

@@ -24,6 +24,17 @@ const ffmpegTracingIncludes = ffmpegStaticPath
 		]
 	: [];
 
+const serverActionsAllowedOrigins = (() => {
+	const webUrl = process.env.WEB_URL ?? process.env.NEXT_PUBLIC_WEB_URL;
+	if (!webUrl) return [];
+	try {
+		const { host } = new URL(webUrl);
+		return [host, `${host}.`];
+	} catch {
+		return [];
+	}
+})();
+
 const nextConfig = {
 	outputFileTracingRoot: path.resolve(appDirectory, "../.."),
 	reactStrictMode: true,
@@ -73,6 +84,9 @@ const nextConfig = {
 			"date-fns",
 		],
 		turbopackFileSystemCacheForDev: true,
+		serverActions: {
+			allowedOrigins: serverActionsAllowedOrigins,
+		},
 	},
 	images: {
 		remotePatterns: [

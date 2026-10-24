@@ -21,7 +21,8 @@ const authRequired = () =>
 const tokenExpired = () =>
 	new Agent.AgentAuthenticationError({
 		code: "TOKEN_EXPIRED",
-		message: "The Cap CLI credential has expired or been revoked",
+		message:
+			"The Bizstudio Recorder CLI credential has expired or been revoked",
 		retryable: false,
 		retryAfterMs: null,
 		requestId: requestId(),

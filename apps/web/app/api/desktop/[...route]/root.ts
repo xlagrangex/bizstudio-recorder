@@ -9,7 +9,7 @@ import {
 	organizations,
 	users,
 } from "@cap/database/schema";
-import { serverEnv } from "@cap/env";
+import { buildEnv, serverEnv } from "@cap/env";
 import {
 	isProSubscription,
 	isValidStripePlanPriceId,
@@ -21,7 +21,7 @@ import { OrganizationBrandingPatchBody } from "@cap/web-api-contract";
 import { ImageUploads } from "@cap/web-backend";
 import { type ImageUpload, Organisation } from "@cap/web-domain";
 import { zValidator } from "@hono/zod-validator";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { Effect, Option } from "effect";
 import { type Context, Hono } from "hono";
 import type Stripe from "stripe";
@@ -248,6 +248,18 @@ app.post(
 	},
 );
 
+async function getSelfHostedFeedbackRecipient() {
+	const configured = serverEnv().FEEDBACK_EMAIL?.trim();
+	if (configured) return configured;
+
+	const [owner] = await db()
+		.select({ email: users.email })
+		.from(users)
+		.orderBy(asc(users.created_at))
+		.limit(1);
+	return owner?.email ?? null;
+}
+
 app.post(
 	"/feedback",
 	withAuth,
@@ -264,8 +276,16 @@ app.post(
 		const userEmail = c.get("user").email;
 
 		try {
+			const isCap = buildEnv.NEXT_PUBLIC_IS_CAP === "true";
+			const recipient = isCap
+				? "hello@cap.so"
+				: await getSelfHostedFeedbackRecipient();
+			if (!recipient) {
+				return c.json({ error: "Failed to submit feedback" }, { status: 500 });
+			}
+
 			await sendEmail({
-				email: "hello@cap.so",
+				email: recipient,
 				subject: `New Feedback from ${userEmail}`,
 				react: Feedback({
 					userEmail,
@@ -275,7 +295,9 @@ app.post(
 				}),
 				cc: userEmail,
 				replyTo: userEmail,
-				fromOverride: "Richie from Cap <richie@send.cap.so>",
+				...(isCap
+					? { fromOverride: "Richie from Cap <richie@send.cap.so>" }
+					: {}),
 			});
 
 			return c.json({

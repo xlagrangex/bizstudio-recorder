@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import robots from "@/app/robots";
 import { DISCORD_URL } from "@/components/pages/about/content";
 import {
@@ -15,6 +15,20 @@ import {
 import { HomeTwoSchema } from "@/components/pages/HomeTwo/Schema";
 import { homepageSchema, homepageSeo } from "@/components/pages/HomeTwo/seo";
 import { PRICING } from "@/data/pricing";
+
+const env = vi.hoisted(() => ({
+	build: { NEXT_PUBLIC_IS_CAP: "true" as string | undefined },
+}));
+
+vi.mock("@cap/env", () => ({
+	buildEnv: env.build,
+	serverEnv: () => ({ WEB_URL: "https://cap.so" }),
+}));
+
+vi.mock("next/server", async (importOriginal) => ({
+	...(await importOriginal<typeof import("next/server")>()),
+	connection: async () => {},
+}));
 
 describe("homepage SEO", () => {
 	it("uses the public root as the crawlable canonical", async () => {
@@ -32,6 +46,19 @@ describe("homepage SEO", () => {
 				: [rule.disallow];
 			expect(disallowed).not.toContain("/");
 			expect(disallowed).not.toContain("/home");
+		}
+	});
+
+	it("keeps self-hosted instances out of search except shared videos", async () => {
+		env.build.NEXT_PUBLIC_IS_CAP = undefined;
+		try {
+			const policy = await robots();
+			expect(policy.rules).toEqual([
+				{ userAgent: "*", allow: ["/s/", "/embed/"], disallow: "/" },
+			]);
+			expect(policy.sitemap).toBe("https://cap.so/sitemap.xml");
+		} finally {
+			env.build.NEXT_PUBLIC_IS_CAP = "true";
 		}
 	});
 

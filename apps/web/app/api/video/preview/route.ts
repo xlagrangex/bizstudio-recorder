@@ -1,3 +1,4 @@
+import { buildEnv, serverEnv } from "@cap/env";
 import { provideOptionalAuth, Storage, Videos } from "@cap/web-backend";
 import { Video } from "@cap/web-domain";
 import { Effect, Option } from "effect";
@@ -17,7 +18,10 @@ function getFallbackResponse(request: NextRequest, videoId: string) {
 		return new NextResponse(null, { status: 404 });
 	}
 
-	const fallbackUrl = new URL("/api/video/og", request.url);
+	const fallbackUrl = new URL(
+		"/api/video/og",
+		buildEnv.NEXT_PUBLIC_IS_CAP === "true" ? request.url : serverEnv().WEB_URL,
+	);
 	fallbackUrl.searchParams.set("videoId", videoId);
 	const response = NextResponse.redirect(fallbackUrl, 302);
 	response.headers.set("Cache-Control", "private, no-store, max-age=0");

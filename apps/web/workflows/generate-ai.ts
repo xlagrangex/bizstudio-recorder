@@ -599,7 +599,7 @@ async function generateSingleChunk(
 		.join("\n");
 	const contentGuidelines = getAiContentGuidelines(videoDuration);
 
-	const prompt = `You are Cap AI, an expert at turning video transcripts into useful, concise summaries.
+	const prompt = `You are Bizstudio Recorder AI, an expert at turning video transcripts into useful, concise summaries.
 
 The video is ${videoDuration} seconds long (${Math.floor(videoDuration / 60)}:${String(Math.floor(videoDuration % 60)).padStart(2, "0")} total). Analyze this timestamped transcript and provide JSON:
 {
@@ -645,7 +645,7 @@ async function generateMultipleChunks(
 		const chunk = chunks[i];
 		if (!chunk) continue;
 
-		const chunkPrompt = `You are Cap AI, analyzing one section of a video for a later final summary. This is section ${i + 1} of ${chunks.length} from a video that is ${videoDuration} seconds long (${Math.floor(videoDuration / 60)}:${String(Math.floor(videoDuration % 60)).padStart(2, "0")} total). This section covers timestamp ${Math.floor(chunk.startTime / 60)}:${String(chunk.startTime % 60).padStart(2, "0")} to ${Math.floor(chunk.endTime / 60)}:${String(chunk.endTime % 60).padStart(2, "0")}.
+		const chunkPrompt = `You are Bizstudio Recorder AI, analyzing one section of a video for a later final summary. This is section ${i + 1} of ${chunks.length} from a video that is ${videoDuration} seconds long (${Math.floor(videoDuration / 60)}:${String(Math.floor(videoDuration % 60)).padStart(2, "0")} total). This section covers timestamp ${Math.floor(chunk.startTime / 60)}:${String(chunk.startTime % 60).padStart(2, "0")} to ${Math.floor(chunk.endTime / 60)}:${String(chunk.endTime % 60).padStart(2, "0")}.
 
 Extract only the information needed to understand this section's contribution to the full video and provide JSON:
 {
@@ -702,7 +702,7 @@ ${chunk.text}`;
 		})
 		.join("\n\n");
 
-	const finalPrompt = `You are Cap AI, an expert at turning video analyses into useful, concise summaries.
+	const finalPrompt = `You are Bizstudio Recorder AI, an expert at turning video analyses into useful, concise summaries.
 
 Using these section analyses, create a standalone final summary that lets someone understand the video without watching it.
 

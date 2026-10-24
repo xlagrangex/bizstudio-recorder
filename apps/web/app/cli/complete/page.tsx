@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Cap CLI",
+	title: "Bizstudio Recorder CLI",
 };
 
 type PageProps = {
@@ -18,7 +18,7 @@ export default async function CliCompletePage({ searchParams }: PageProps) {
 		<main className="grid min-h-screen place-items-center bg-gray-1 px-6 text-gray-12">
 			<div className="w-full max-w-md rounded-2xl border border-gray-4 bg-gray-2 p-8 text-center shadow-sm">
 				<div className="mx-auto mb-5 grid size-12 place-items-center rounded-full bg-gray-12 text-xl font-semibold text-gray-1">
-					C
+					B
 				</div>
 				<h1 className="text-xl font-semibold tracking-tight">
 					{cancelled ? "Action cancelled" : "Action complete"}
@@ -26,7 +26,7 @@ export default async function CliCompletePage({ searchParams }: PageProps) {
 				<p className="mt-2 text-sm leading-6 text-gray-10">
 					{cancelled
 						? "No changes were made. You can close this window and return to your terminal."
-						: "You can close this window and return to your terminal. Cap CLI can now continue."}
+						: "You can close this window and return to your terminal. Bizstudio Recorder CLI can now continue."}
 				</p>
 			</div>
 		</main>

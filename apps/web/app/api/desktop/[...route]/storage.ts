@@ -42,6 +42,7 @@ const GoogleDriveOAuthState = z.object({
 });
 
 const googleDriveProvider = "googleDrive";
+const GOOGLE_DRIVE_DEFAULT_FOLDER_NAME = "Bizstudio Recorder";
 
 const RefreshStorageQuotaQuery = z.object({
 	refreshStorageQuota: z
@@ -483,12 +484,12 @@ app.get("/google-drive/callback", async (c) => {
 		};
 		const defaultFolderId = await ensureGoogleDriveFolder(
 			initialConfig,
-			"Cap",
+			GOOGLE_DRIVE_DEFAULT_FOLDER_NAME,
 		).pipe(runPromise);
 		const config: GoogleDriveIntegrationConfig = {
 			...initialConfig,
 			folderId: defaultFolderId,
-			folderName: "Cap",
+			folderName: GOOGLE_DRIVE_DEFAULT_FOLDER_NAME,
 		};
 		const email = await getGoogleDriveUserEmail(config).pipe(runPromise);
 		const encryptedConfig = await encrypt(
@@ -584,7 +585,7 @@ app.get("/google-drive/callback", async (c) => {
 				organizationId
 					? {
 							title: "Google Drive connected",
-							body: 'Your Google account is now linked to Bizstudio Recorder. We\'ve created a "Cap" folder in your Drive to store your recordings.',
+							body: `Your Google account is now linked to Bizstudio Recorder. We've created a "${GOOGLE_DRIVE_DEFAULT_FOLDER_NAME}" folder in your Drive to store your recordings.`,
 							redirectUrl: agentRedirect
 								? agentSuccessRedirectUrl
 								: orgRedirectUrl,

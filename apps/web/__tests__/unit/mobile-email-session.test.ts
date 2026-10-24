@@ -188,6 +188,7 @@ describe("mobile email sessions", () => {
 
 	beforeAll(async () => {
 		Object.assign(process.env, {
+			NEXT_PUBLIC_IS_CAP: "true",
 			NEXT_PUBLIC_WEB_URL: "http://localhost",
 			WEB_URL: "http://localhost",
 			DATABASE_URL: "mysql://unused:unused@127.0.0.1:3306/unused",

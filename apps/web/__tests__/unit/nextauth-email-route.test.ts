@@ -14,7 +14,10 @@ const env = vi.hoisted(() => ({
 	NEXTAUTH_SECRET: "test-email-route-secret-with-sufficient-entropy",
 }));
 
-vi.mock("@cap/env", () => ({ serverEnv: () => env }));
+vi.mock("@cap/env", () => ({
+	buildEnv: { NEXT_PUBLIC_IS_CAP: "true" },
+	serverEnv: () => env,
+}));
 vi.mock("@cap/database/auth/auth-options", () => ({
 	authOptions: () => ({ providers: [] }),
 	decodeSessionToken: vi.fn(),

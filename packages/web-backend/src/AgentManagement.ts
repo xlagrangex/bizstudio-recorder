@@ -775,7 +775,7 @@ export class AgentManagement extends Effect.Service<AgentManagement>()(
 						organization.ownerThirdPartySubscriptionId !== null;
 					if (!isPro) {
 						return yield* new Policy.PolicyDeniedError({
-							reason: "Cap Pro is required for analytics",
+							reason: "Bizstudio Recorder Pro is required for analytics",
 						});
 					}
 					if (spaceId) {

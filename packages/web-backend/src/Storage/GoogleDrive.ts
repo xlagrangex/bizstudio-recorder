@@ -24,7 +24,7 @@ const DRIVE_FOLDER_OBJECT_PREFIX = ".cap-folders";
 const DRIVE_WARNING_OBJECT_PREFIX = ".cap-warnings";
 const DRIVE_WARNING_FILE_NAME = "DO_NOT_EDIT_OR_DELETE.txt";
 const DRIVE_WARNING_TEXT =
-	"Cap uses this folder to store and serve your video files. Do not rename, move, edit, or delete files or folders here. Changing anything in this folder can break playback, downloads, thumbnails, captions, and processing.";
+	"Bizstudio Recorder uses this folder to store and serve your video files. Do not rename, move, edit, or delete files or folders here. Changing anything in this folder can break playback, downloads, thumbnails, captions, and processing.";
 
 export type GoogleDriveFile = {
 	id: string;

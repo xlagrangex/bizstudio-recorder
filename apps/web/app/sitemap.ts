@@ -1,5 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { buildEnv, serverEnv } from "@cap/env";
+import { connection } from "next/server";
 import { getBlogPosts, getDocs } from "@/utils/blog";
 import {
 	CHANGELOG_PAGE_SIZE,
@@ -88,6 +90,11 @@ async function getPagePaths(
 }
 
 export default async function sitemap() {
+	if (buildEnv.NEXT_PUBLIC_IS_CAP !== "true") {
+		await connection();
+		return [{ url: new URL("/", serverEnv().WEB_URL).toString() }];
+	}
+
 	const appDirectory = path.join(process.cwd(), "app");
 	const pagePaths = await getPagePaths(appDirectory);
 

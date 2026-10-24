@@ -1,4 +1,10 @@
 import crypto from "node:crypto";
+import { buildEnv } from "@cap/env";
+import { headers as nextHeaders } from "next/headers";
+import {
+	createLocalRateLimiter,
+	requestClientIp,
+} from "@/lib/local-rate-limit";
 import { isRateLimited, RATE_LIMIT_IDS } from "@/lib/rate-limit";
 
 export function normalizeSignInEmail(value: unknown) {
@@ -19,14 +25,46 @@ const emailCodeRateLimitKey = (scope: string, email: string) =>
 		.update(email.normalize("NFKD").replace(/\p{M}/gu, ""))
 		.digest("hex")}`;
 
+const TEN_MINUTES_MS = 10 * 60 * 1000;
+
+const localEmailCodeLimiters = {
+	send: {
+		email: createLocalRateLimiter({ limit: 5, windowMs: TEN_MINUTES_MS }),
+		ip: createLocalRateLimiter({ limit: 20, windowMs: TEN_MINUTES_MS }),
+	},
+	verify: {
+		email: createLocalRateLimiter({ limit: 10, windowMs: TEN_MINUTES_MS }),
+		ip: createLocalRateLimiter({ limit: 30, windowMs: TEN_MINUTES_MS }),
+	},
+};
+
+async function isLocallyLimited(
+	kind: keyof typeof localEmailCodeLimiters,
+	key: string,
+	headers?: Headers,
+) {
+	const limiters = localEmailCodeLimiters[kind];
+	const emailLimited = limiters.email.take(key);
+	const ip = requestClientIp(headers ?? (await nextHeaders()));
+	const ipLimited = ip ? limiters.ip.take(`${kind}:${ip}`) : false;
+	return emailLimited || ipLimited;
+}
+
+const isEmailCodeLimited = (
+	kind: keyof typeof localEmailCodeLimiters,
+	ruleId: string,
+	email: string,
+	headers?: Headers,
+) => {
+	const key = emailCodeRateLimitKey(`email-code-${kind}`, email);
+	if (buildEnv.NEXT_PUBLIC_IS_CAP !== "true") {
+		return isLocallyLimited(kind, key, headers);
+	}
+	return isRateLimited(ruleId, { key, headers });
+};
+
 export const isEmailCodeSendLimited = (email: string, headers?: Headers) =>
-	isRateLimited(RATE_LIMIT_IDS.AUTH_OTP_SEND, {
-		key: emailCodeRateLimitKey("email-code-send", email),
-		headers,
-	});
+	isEmailCodeLimited("send", RATE_LIMIT_IDS.AUTH_OTP_SEND, email, headers);
 
 export const isEmailCodeVerifyLimited = (email: string, headers?: Headers) =>
-	isRateLimited(RATE_LIMIT_IDS.AUTH_OTP_VERIFY, {
-		key: emailCodeRateLimitKey("email-code-verify", email),
-		headers,
-	});
+	isEmailCodeLimited("verify", RATE_LIMIT_IDS.AUTH_OTP_VERIFY, email, headers);

@@ -35,9 +35,31 @@ const mainOrigins = [
 	addHttps(serverEnv().VERCEL_PROJECT_PRODUCTION_URL_HOST),
 ].filter(Boolean) as string[];
 
+// Browsers send the fully-qualified "rec.example.com." as Origin while nginx
+// strips the dot from Host, so Server Actions reject the request. The built
+// serverActions.allowedOrigins only helps when WEB_URL is set at build time.
+function canonicalTrailingDotOrigin(request: NextRequest) {
+	const origin = request.headers.get("origin");
+	if (!origin || origin === "null") return null;
+	try {
+		const webUrl = new URL(serverEnv().WEB_URL);
+		if (new URL(origin).host !== `${webUrl.host}.`) return null;
+		const headers = new Headers(request.headers);
+		headers.set("origin", webUrl.origin);
+		return headers;
+	} catch {
+		return null;
+	}
+}
+
 export async function proxy(request: NextRequest) {
 	const url = new URL(request.url);
 	const path = url.pathname;
+
+	if (buildEnv.NEXT_PUBLIC_IS_CAP !== "true" && request.method === "POST") {
+		const headers = canonicalTrailingDotOrigin(request);
+		if (headers) return NextResponse.next({ request: { headers } });
+	}
 
 	if (path === "/" && request.cookies.has("next-auth.session-token")) {
 		return NextResponse.redirect(new URL("/dashboard/caps", url.origin));
