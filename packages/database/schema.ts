@@ -446,6 +446,7 @@ export const videos = mysqlTable(
 			disableTranscript?: boolean;
 			disableComments?: boolean;
 			defaultPlaybackSpeed?: number;
+			preventSkipAhead?: boolean;
 			callToAction?: VideoCallToAction;
 		}>(),
 		transcriptionStatus: varchar("transcriptionStatus", { length: 255 }).$type<

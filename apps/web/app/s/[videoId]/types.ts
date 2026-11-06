@@ -14,7 +14,9 @@ export type VideoData = Omit<typeof videos.$inferSelect, "ownerId"> & {
 	inheritedPasswordSources?: SpaceRuleSource[];
 	inheritedSpaceSettings?: Partial<Record<ViewerSettingKey, SpaceRuleSource[]>>;
 	orgSettings?: OrganizationSettings | null;
-	videoSettings?: OrganizationSettings | null;
+	videoSettings?:
+		| (OrganizationSettings & { preventSkipAhead?: boolean })
+		| null;
 	organizationName?: string | null;
 	organizationIconUrl?: ImageUpload.ImageUrl | null;
 	shareableLinkIconUrl?: ImageUpload.ImageUrl | null;

@@ -128,6 +128,7 @@ export interface CapCardProps extends PropsWithChildren {
 			disableChapters?: boolean;
 			disableReactions?: boolean;
 			disableTranscript?: boolean;
+			preventSkipAhead?: boolean;
 		} | null;
 	};
 	analytics: number;
@@ -420,6 +421,7 @@ export const CapCard = ({
 			<SettingsDialog
 				isOpen={isSettingsDialogOpen}
 				settingsData={cap.settings ?? undefined}
+				preventSkipAhead={cap.settings?.preventSkipAhead ?? false}
 				inheritedSpaceSettings={cap.inheritedSpaceSettings}
 				capId={cap.id}
 				onClose={() => setIsSettingsDialogOpen(false)}

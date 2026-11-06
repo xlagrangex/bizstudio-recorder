@@ -18,6 +18,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { toast } from "sonner";
 import { finalizeDesktopSegmentsRecording } from "@/actions/video/finalize-desktop-segments";
 import { Tooltip } from "@/components/Tooltip";
 import { isRetryableDesktopSegmentsFinalizationError } from "@/lib/desktop-segments-retryable-errors";
@@ -29,6 +30,7 @@ import {
 	RecordingInProgressOverlay,
 } from "./RecordingInProgress";
 import { ShareableLinkLimitOverlay } from "./ShareableLinkLimitOverlay";
+import { useSkipAheadGuard } from "./skip-ahead-guard";
 import {
 	isRecordingUpload,
 	shouldDeferPlaybackSource,
@@ -99,6 +101,7 @@ export const ShareVideo = forwardRef<
 		isEditProcessing: boolean;
 		recordingStopped?: boolean;
 		defaultPlaybackSpeed?: number;
+		preventSkipAhead?: boolean;
 		viewerIsOwner?: boolean;
 		callToAction?: ShareCallToAction | null;
 	}
@@ -122,6 +125,7 @@ export const ShareVideo = forwardRef<
 			isEditProcessing,
 			recordingStopped = false,
 			defaultPlaybackSpeed,
+			preventSkipAhead = false,
 			viewerIsOwner = false,
 			callToAction = null,
 		},
@@ -129,6 +133,19 @@ export const ShareVideo = forwardRef<
 	) => {
 		const videoRef = useRef<HTMLVideoElement | null>(null);
 		useImperativeHandle(ref, () => videoRef.current as HTMLVideoElement, []);
+		const lastSkipNoticeAt = useRef(0);
+		useSkipAheadGuard(videoRef, {
+			enabled: preventSkipAhead,
+			videoId: data.id,
+			onBlocked: () => {
+				const now = Date.now();
+				if (now - lastSkipNoticeAt.current < 4000) return;
+				lastSkipNoticeAt.current = now;
+				toast("Skipping ahead is off for this video", {
+					description: "You can go back to anything you've already watched.",
+				});
+			},
+		});
 		const router = useRouter();
 		const handleUploadComplete = useCallback(() => {
 			router.refresh();

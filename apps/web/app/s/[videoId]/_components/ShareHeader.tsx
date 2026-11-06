@@ -920,6 +920,7 @@ export const ShareHeader = ({
 							onClose={() => setIsSettingsDialogOpen(false)}
 							capId={data.id}
 							settingsData={data.videoSettings ?? undefined}
+							preventSkipAhead={data.videoSettings?.preventSkipAhead ?? false}
 							inheritedSpaceSettings={data.inheritedSpaceSettings}
 							user={user}
 							organizationSettings={data.orgSettings}

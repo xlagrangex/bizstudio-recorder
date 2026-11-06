@@ -452,7 +452,9 @@ async function AuthorizedContent({
 		activeUploadRawFileKey: string | null;
 		orgSettings?: OrganizationSettings | null;
 		allowedEmailDomain?: string | null;
-		videoSettings?: OrganizationSettings | null;
+		videoSettings?:
+			| (OrganizationSettings & { preventSkipAhead?: boolean })
+			| null;
 		organizationName?: string | null;
 		organizationIconUrl?: ImageUpload.ImageUrlOrKey | null;
 		shareableLinkIconUrl?: ImageUpload.ImageUrlOrKey | null;
@@ -994,6 +996,10 @@ async function AuthorizedContent({
 				isEditProcessing={isEditProcessing}
 				recordingStopped={recordingStopped}
 				defaultPlaybackSpeed={defaultPlaybackSpeed}
+				preventSkipAhead={
+					video.videoSettings?.preventSkipAhead === true &&
+					user?.id !== video.owner.id
+				}
 				initialAiData={initialAiData}
 				aiGenerationAvailable={aiGenerationEnabled && aiProviderAvailable}
 				transcriptionGenerationAvailable={transcriptionGenerationAvailable}

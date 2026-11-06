@@ -196,6 +196,8 @@ interface ShareProps {
 	isEditProcessing: boolean;
 	recordingStopped?: boolean;
 	defaultPlaybackSpeed?: number;
+	/** Server-resolved: on for this video and the viewer is not its owner. */
+	preventSkipAhead?: boolean;
 	initialAiData?: {
 		title?: string | null;
 		summary?: string | null;
@@ -333,6 +335,7 @@ export const Share = ({
 	isEditProcessing,
 	recordingStopped = false,
 	defaultPlaybackSpeed,
+	preventSkipAhead = false,
 	aiGenerationAvailable,
 	transcriptionGenerationAvailable,
 	initialView = "classic",
@@ -994,6 +997,7 @@ export const Share = ({
 														isEditProcessing={isEditProcessing}
 														recordingStopped={recordingStopped}
 														defaultPlaybackSpeed={defaultPlaybackSpeed}
+														preventSkipAhead={preventSkipAhead}
 														viewerIsOwner={viewerId === data.owner.id}
 														callToAction={data.callToAction}
 														ref={playerRef}

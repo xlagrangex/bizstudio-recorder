@@ -28,6 +28,7 @@ interface SettingsDialogProps {
 	inheritedSpaceSettings?: Partial<Record<ViewerSettingKey, SpaceRuleSource[]>>;
 	user?: CurrentUser | null;
 	organizationSettings?: OrganizationSettings | null;
+	preventSkipAhead?: boolean;
 	onSaved?: () => void;
 }
 
@@ -80,6 +81,7 @@ export const SettingsDialog = ({
 	inheritedSpaceSettings,
 	user: propUser,
 	organizationSettings: propOrganizationSettings,
+	preventSkipAhead: savedPreventSkipAhead = false,
 	onSaved,
 }: SettingsDialogProps) => {
 	const contextData = useDashboardContext();
@@ -104,11 +106,16 @@ export const SettingsDialog = ({
 		buildSettings(settingsData),
 	);
 
+	const [preventSkipAhead, setPreventSkipAhead] = useState(
+		savedPreventSkipAhead,
+	);
+
 	useEffect(() => {
 		if (isOpen) {
 			setSettings(buildSettings(settingsData));
+			setPreventSkipAhead(savedPreventSkipAhead);
 		}
-	}, [buildSettings, isOpen, settingsData]);
+	}, [buildSettings, isOpen, settingsData, savedPreventSkipAhead]);
 
 	const saveHandler = async () => {
 		if (!settings) return;
@@ -117,7 +124,7 @@ export const SettingsDialog = ({
 			const payload = Object.fromEntries(
 				Object.entries(settings).filter(([, v]) => v !== undefined),
 			) as Partial<OrganizationSettings>;
-			await updateVideoSettings(capId, payload);
+			await updateVideoSettings(capId, { ...payload, preventSkipAhead });
 			toast.success("Settings updated successfully");
 			onClose();
 			onSaved?.();
@@ -271,6 +278,22 @@ export const SettingsDialog = ({
 								</button>
 							))}
 						</div>
+					</div>
+				</div>
+				<div className="px-5 pb-5">
+					<div className="flex gap-10 justify-between items-center p-4 rounded-xl border border-gray-3 bg-gray-1">
+						<div className="flex flex-col flex-1 gap-1">
+							<p className="text-sm text-gray-12">Block skipping ahead</p>
+							<p className="text-xs text-gray-10">
+								Viewers can't jump past the furthest point they have watched.
+								They can still go back and change the speed. You can always skip
+								when signed in.
+							</p>
+						</div>
+						<Switch
+							onCheckedChange={(checked) => setPreventSkipAhead(checked)}
+							checked={preventSkipAhead}
+						/>
 					</div>
 				</div>
 				<DialogFooter className="p-5 border-t border-gray-4">

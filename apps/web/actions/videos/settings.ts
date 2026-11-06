@@ -14,6 +14,7 @@ const VIEWER_SETTING_KEYS = [
 	"disableReactions",
 	"disableTranscript",
 	"disableComments",
+	"preventSkipAhead",
 ] as const;
 
 export async function updateVideoSettings(
@@ -25,6 +26,7 @@ export async function updateVideoSettings(
 		disableReactions?: boolean;
 		disableTranscript?: boolean;
 		disableComments?: boolean;
+		preventSkipAhead?: boolean;
 		defaultPlaybackSpeed?: number;
 	},
 ) {
