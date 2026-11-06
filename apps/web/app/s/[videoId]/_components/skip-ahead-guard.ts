@@ -87,9 +87,17 @@ export function useSkipAheadGuard(
 		const guard = createSkipAheadGuard(readFrontier(videoId));
 		let savedSecond = Math.floor(guard.frontier());
 
+		// The seek slider reads this to stop at the watched point instead of
+		// sitting on a time the guard already pulled the video back from.
+		const publish = (video: HTMLVideoElement) => {
+			video.dataset.watchedUntil = String(guard.frontier());
+		};
+
 		const handleTimeUpdate = (event: Event) => {
 			if (event.target !== videoRef.current) return;
+			publish(videoRef.current);
 			if (!guard.onTimeUpdate(videoRef.current)) return;
+			publish(videoRef.current);
 			const second = Math.floor(guard.frontier());
 			if (second > savedSecond) {
 				savedSecond = second;
@@ -98,14 +106,17 @@ export function useSkipAheadGuard(
 		};
 		const handleSeeking = (event: Event) => {
 			if (event.target !== videoRef.current) return;
+			publish(videoRef.current);
 			if (guard.onSeeking(videoRef.current)) onBlockedRef.current?.();
 		};
+		if (videoRef.current) publish(videoRef.current);
 
 		document.addEventListener("timeupdate", handleTimeUpdate, true);
 		document.addEventListener("seeking", handleSeeking, true);
 		return () => {
 			document.removeEventListener("timeupdate", handleTimeUpdate, true);
 			document.removeEventListener("seeking", handleSeeking, true);
+			if (videoRef.current) delete videoRef.current.dataset.watchedUntil;
 		};
 	}, [enabled, videoId, videoRef]);
 }

@@ -2082,9 +2082,19 @@ function MediaPlayerSeek(props: MediaPlayerSeekProps) {
 		],
 	);
 
+	const clampToWatched = React.useCallback(
+		(time: number) => {
+			const limit = Number(context.mediaRef.current?.dataset.watchedUntil);
+			return Number.isFinite(limit) && limit >= 0
+				? Math.min(time, limit)
+				: time;
+		},
+		[context.mediaRef],
+	);
+
 	const onSeek = React.useCallback(
 		(value: number[]) => {
-			const time = value[0] ?? 0;
+			const time = clampToWatched(value[0] ?? 0);
 
 			setSeekState((prev) => ({ ...prev, pendingSeekTime: time }));
 
@@ -2104,12 +2114,12 @@ function MediaPlayerSeek(props: MediaPlayerSeekProps) {
 				seekThrottleRef.current = null;
 			});
 		},
-		[dispatch, store.getState, store.setState],
+		[dispatch, store.getState, store.setState, clampToWatched],
 	);
 
 	const onSeekCommit = React.useCallback(
 		(value: number[]) => {
-			const time = value[0] ?? 0;
+			const time = clampToWatched(value[0] ?? 0);
 
 			if (seekThrottleRef.current) {
 				cancelAnimationFrame(seekThrottleRef.current);
@@ -2159,7 +2169,7 @@ function MediaPlayerSeek(props: MediaPlayerSeekProps) {
 				detail: undefined,
 			});
 		},
-		[dispatch, store.getState, store.setState],
+		[dispatch, store.getState, store.setState, clampToWatched],
 	);
 
 	React.useEffect(() => {
